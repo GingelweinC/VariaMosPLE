@@ -3,7 +3,7 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Accordion from "react-bootstrap/Accordion";
 import ProjectService from "../../Application/Project/ProjectService";
-import { Semantics } from "../../core/components/LanguageManager/index.types";
+import { Semantics } from "../../Domain/ProductLineEngineering/Entities/Sementics";
 import * as alertify from "alertifyjs";
 
 enum QueryType {

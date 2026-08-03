@@ -1,38 +1,4 @@
-export interface CreateLanguageEvents {
-  handleClose: () => void;
-  handleCreateClick: () => void;
-}
-
-export interface CreateLanguageStates {
-  show: boolean;
-}
-
-export interface CreateLanguageProps {
-  handleCreateClick: (event) => void;
-}
-
-
-//These types are wrong...
-export interface Language {
-  name: string;
-  abstractSyntax: string;
-  concreteSyntax: string;
-  type: string;
-  stateAccept: string;
-  //I should probably modify this to be of type Semantics
-  semantics: string;
-}
-
-export interface LanguageManagerProps {
-  setLanguage: (value) => void;
-  setCreatingLanguage: (value) => void;
-  requestLanguages: boolean;
-  setRequestLanguages: (value) => void;
-}
-
-//Complete type definitions for the semantics specification rules
-//Up to date as of 2024-02-15
-export interface SimpleElementRule {
+interface SimpleElementRule {
   param: string;
   constraint: string;
   enumMapping?: EnumParameterMapping;
@@ -40,46 +6,46 @@ export interface SimpleElementRule {
   deselectedConstraint?: string;
 }
 
-export interface EnumParameterMapping {
+interface EnumParameterMapping {
   var: string;
   attribute: string;
 }
 
-export interface MappingConfig {
+interface MappingConfig {
   unique: boolean;
   var: string;
 }
 
-export interface ReifiedRelationParameterMapping {
+interface ReifiedRelationParameterMapping {
   inboundEdges: MappingConfig;
   outboundEdges: MappingConfig;
   node?: string;
 }
 
-export interface ReifiedRelationElementRule {
+interface ReifiedRelationElementRule {
   param: string[];
   paramMapping: ReifiedRelationParameterMapping;
   constraint: Record<string, string>;
 }
 
-export interface RelationRule {
+interface RelationRule {
   params: string[];
   constraint: string;
 }
 
-export interface RelationPropertyLookupRule {
+interface RelationPropertyLookupRule {
   index: number;
   key: string;
 }
 
-export interface RelationTypedElementRule {
+interface RelationTypedElementRule {
   param: string[];
   relationLookupSchema: Record<string, RelationPropertyLookupRule>;
   derivingRelationInbound: boolean;
   constraint: string;
 }
 
-export interface AttributeTranslationRule {
+interface AttributeTranslationRule {
   parent: string;
   param: string;
   template: string;
@@ -89,19 +55,19 @@ export interface AttributeTranslationRule {
   values?: string;
 }
 
-export interface HierarchyNodeRule {
+interface HierarchyNodeRule {
   param: string[];
   paramMapping: HierarchyNodeParameterMapping;
   constraint: string;
 }
 
-export interface HierarchyNodeParameterMapping {
+interface HierarchyNodeParameterMapping {
   incoming: boolean;
   var: string;
   node: string;
 }
 
-export interface HierarchyTranslationRule {
+interface HierarchyTranslationRule {
   nodeRule: HierarchyNodeRule;
   leafRule: SimpleElementRule;
 }
