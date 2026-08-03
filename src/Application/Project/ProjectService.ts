@@ -23,7 +23,6 @@ import { ProjectAnnotation } from "../../Domain/ProductLineEngineering/Entities/
 import ProjectPersistenceUseCases from "../../Domain/ProductLineEngineering/UseCases/ProjectPersistenceUseCases";
 import {
   ModelLookupResult,
-  default as ProjectManager,
   default as ProjectUseCases,
 } from "../../Domain/ProductLineEngineering/UseCases/ProjectUseCases";
 import { runQuery, runQueryFromModel } from "../../Domain/ProductLineEngineering/UseCases/QueryUseCases";
@@ -48,7 +47,7 @@ import {
 
 export default class ProjectService {
   private graph: any;
-  private projectManager: ProjectManager = new ProjectManager();
+  private projectUseCases: ProjectUseCases = new ProjectUseCases();
   private languageUseCases: LanguageUseCases = new LanguageUseCases();
   private projectPersistenceUseCases: ProjectPersistenceUseCases = new ProjectPersistenceUseCases();
   private restrictionsUseCases: RestrictionsUseCases =
@@ -754,14 +753,14 @@ export default class ProjectService {
   }
 
   createNewProject(projectName: string, productLineName: string, type: string, domain: string) {
-    let project = this.projectManager.createProject(projectName);
+    let project = this.projectUseCases.createProject(projectName);
     this.createLPS(project, productLineName, type, domain);
     this._isProjectLoaded = true;
     return project;
   }
 
   createProject(projectName: string): Project {
-    let project = this.projectManager.createProject(projectName);
+    let project = this.projectUseCases.createProject(projectName);
     project = this.loadProject(project);
 
     return project;
@@ -974,11 +973,11 @@ export default class ProjectService {
   }
 
   saveProject(): void {
-    this.projectManager.saveProject(this._project);
+    this.projectUseCases.saveProject(this._project);
   }
 
   deleteProject(): void {
-    this.projectManager.deleteProject();
+    this.projectUseCases.deleteProject();
     window.location.reload();
   }
 
@@ -998,7 +997,7 @@ export default class ProjectService {
     const deletedItemId = this.treeIdItemSelected;
     const currentlyOpenModelId = this.getCurrentlyOpenModelId();
 
-    this._project = this.projectManager.deleteItemProject(
+    this._project = this.projectUseCases.deleteItemProject(
       this._project,
       deletedItemId
     );
@@ -1016,7 +1015,7 @@ export default class ProjectService {
   }
 
   renameItemProject(newName: string) {
-    this._project = this.projectManager.renameItemProject(
+    this._project = this.projectUseCases.renameItemProject(
       this._project,
       this.treeIdItemSelected,
       newName
@@ -1025,7 +1024,7 @@ export default class ProjectService {
   }
 
   getItemProjectName() {
-    return this.projectManager.getItemProjectName(
+    return this.projectUseCases.getItemProjectName(
       this._project,
       this.treeIdItemSelected
     );
@@ -1109,7 +1108,7 @@ export default class ProjectService {
     type: string,
     domain: string
   ) {
-    return this.projectManager.createLps(
+    return this.projectUseCases.createLps(
       project,
       productLineName,
       type,
@@ -1137,7 +1136,7 @@ export default class ProjectService {
 
   //Application functions_ START***********
   createApplication(project: Project, applicationName: string) {
-    return this.projectManager.createApplication(
+    return this.projectUseCases.createApplication(
       project,
       applicationName,
       this.productLineSelected
@@ -1164,7 +1163,7 @@ export default class ProjectService {
 
   //Adaptation functions_ START***********
   createAdaptation(project: Project, adaptationName: string) {
-    return this.projectManager.createAdaptation(
+    return this.projectUseCases.createAdaptation(
       project,
       adaptationName,
       this.productLineSelected,
@@ -1200,7 +1199,7 @@ export default class ProjectService {
     author: string,
     source: string
   ) {
-    return this.projectManager.createDomainEngineeringModel(
+    return this.projectUseCases.createDomainEngineeringModel(
       project,
       languageType,
       languageId,
@@ -1220,7 +1219,7 @@ export default class ProjectService {
     author: string,
     source: string
   ) {
-    return this.projectManager.createScopeModel(
+    return this.projectUseCases.createScopeModel(
       project,
       languageType,
       languageId,
@@ -1272,7 +1271,7 @@ export default class ProjectService {
     author: string,
     source: string
   ) {
-    return this.projectManager.createApplicationEngineeringModel(
+    return this.projectUseCases.createApplicationEngineeringModel(
       project,
       languageType,
       languageId,
@@ -1314,7 +1313,7 @@ export default class ProjectService {
     description: string,
     author: string,
     source: string) {
-    return this.projectManager.createApplicationModel(
+    return this.projectUseCases.createApplicationModel(
       project,
       languageType,
       languageId,
@@ -1357,7 +1356,7 @@ export default class ProjectService {
     description: string,
     author: string,
     source: string) {
-    return this.projectManager.createAdaptationModel(
+    return this.projectUseCases.createAdaptationModel(
       project,
       languageType,
       languageId,
@@ -1455,7 +1454,7 @@ export default class ProjectService {
     max: number,
     properties: Property[]
   ): Relationship {
-    let r = this.projectManager.createRelationship(
+    let r = this.projectUseCases.createRelationship(
       model,
       name,
       type,
@@ -1531,7 +1530,7 @@ export default class ProjectService {
   //of a project.
   //It is used when we call the translator from the UI
   updateSelection(projectInResponse: Project, modelSelectedId: string) {
-    const modelLookupResult = this.projectManager.updateSelection(
+    const modelLookupResult = this.projectUseCases.updateSelection(
       this._project,
       projectInResponse,
       modelSelectedId
@@ -1541,19 +1540,19 @@ export default class ProjectService {
 
   //Reset the selection on the currently selected model
   resetModelConfig() {
-    const modelLookupResult = this.projectManager.findModel(
+    const modelLookupResult = this.projectUseCases.findModel(
       this._project,
       this.getTreeIdItemSelected()
     );
     if (modelLookupResult) {
-      this.projectManager.resetSelection(modelLookupResult);
+      this.projectUseCases.resetSelection(modelLookupResult);
       // We should have the enum available here
       this.reSelectModel(modelLookupResult);
     }
   }
 
   lookupAndReselectModel() {
-    const modelLookupResult = this.projectManager.findModel(
+    const modelLookupResult = this.projectUseCases.findModel(
       this._project,
       this.getTreeIdItemSelected()
     );
