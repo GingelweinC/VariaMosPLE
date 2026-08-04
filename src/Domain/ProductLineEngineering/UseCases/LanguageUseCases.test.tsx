@@ -11,25 +11,6 @@ afterEach(() => {
 });
 
 describe('all methods should work', ()=>{
-  test('Using getLanguagesByType should return the right values', () => {
-    /*
-    In the variable mockReturnedValue, all the languages type are DOMAIN
-    so the result should be the same before and after the filter
-     */
-    //Arrange
-    // @ts-ignore
-    jest.spyOn(LanguageService.prototype, "getLanguagesDetail").mockImplementation(() => mockReturnedValue);
-    let languageUseCases = new LanguageUseCases();
-    // @ts-ignore
-    let languages: any = languageUseCases.getLanguagesDetail().data;
-    let languageType = "DOMAIN"
-
-    //Act
-    let languagesFilter = languageUseCases.getLanguagesByType(languageType, languages)
-    //Assert
-    expect(languagesFilter).toStrictEqual(languages)
-  });
-
   test('Using getLanguageByName should return the right values', () => {
     //Arrange
     // @ts-ignore

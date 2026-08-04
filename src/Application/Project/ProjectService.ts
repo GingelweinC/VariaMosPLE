@@ -28,7 +28,6 @@ import {
 import { runQuery, runQueryFromModel } from "../../Domain/ProductLineEngineering/UseCases/QueryUseCases";
 import RestrictionsUseCases from "../../Domain/ProductLineEngineering/UseCases/RestrictionsUseCases";
 import { CreatedElementEventArg } from "./Events/CreatedElementEventArg";
-import { LanguagesDetailEventArg } from "./Events/LanguagesDetailEventArg";
 import { NewAdaptationEventArg } from "./Events/NewAdaptationEventArg";
 import { NewApplicationEventArg } from "./Events/NewApplicationEventArg";
 import { NewModelEventArg } from "./Events/NewModelEventArg";
@@ -63,7 +62,7 @@ export default class ProjectService {
   private _currentModel: Model = null;
 
   private _environment: string = Config.NODE_ENV;
-  private _languages: any = this.getLanguagesByUser();
+  private _languages: any = [];
   private _externalFunctions: ExternalFuntion[] = [];
   private _project: Project = this.createProject("");
   private _projectInformation: ProjectInformation;
@@ -83,7 +82,6 @@ export default class ProjectService {
   private newApplicationModelListeners: any = [];
   private newAdaptationModelListeners: any = [];
   private selectedModelListeners: any = [];
-  private loadLanguagesListeners: any = [];
   private updateProjectListeners: any = [];
   private updateSelectedListeners: any = [];
   private selectedElementListeners: any = [];
@@ -96,6 +94,7 @@ export default class ProjectService {
 
   constructor(user?: SessionUser) {
     this.user = user;
+    this.refreshLanguageList();
   }
 
   public get currentModel(): Model {
@@ -302,38 +301,6 @@ export default class ProjectService {
     return { elements: structure, relationships };
   }
 
-  getFinalMaterials(structure, configurations) {
-    console.log("Structure:", structure);
-    console.log("Configurations:", configurations);
-
-    if (!structure || !structure.elements || !structure.relationships) {
-      console.error("Structure is invalid or incomplete");
-      return { elements: [], relationships: [] };
-    }
-
-    // Asocia configuraciones con elementos
-    const enrichedElements = structure.elements.map((element) => {
-      // Buscar todas las configuraciones relacionadas con este elemento
-      const matchingFeatures = configurations.filter(
-        (feature) => feature.id === element.id
-      );
-
-      // Combinar las propiedades de las configuraciones relacionadas
-      const combinedProperties = matchingFeatures.flatMap(
-        (feature) => feature.properties || []
-      );
-
-      return {
-        ...element,
-        properties: combinedProperties,
-      };
-    });
-
-    console.log("Final enriched elements:", enrichedElements);
-
-    return { elements: enrichedElements, relationships: structure.relationships };
-  }
-
   modelScopeSelected(idPl: number, idScopeModel: number) {
     let modelSelected =
       this._project.productLines[idPl].scope?.models[idScopeModel];
@@ -343,25 +310,11 @@ export default class ProjectService {
     this.raiseEventSelectedModel(modelSelected);
     this.raiseEventUpdateSelected(this.treeItemSelected);
   }
-  //Search Model functions_ START***********
+
   modelDomainSelected(idPl: number, idDomainModel: number) {
     let modelSelected =
       this._project.productLines[idPl].domainEngineering?.models[idDomainModel];
 
-    this.treeItemSelected = "model";
-    this.treeIdItemSelected = modelSelected.id;
-
-    this.loadExternalFunctions(modelSelected.type);
-
-    this.raiseEventSelectedModel(modelSelected);
-    this.raiseEventUpdateSelected(this.treeItemSelected);
-  }
-
-  modelApplicationEngSelected(idPl: number, idApplicationEngModel: number) {
-    let modelSelected =
-      this._project.productLines[idPl].applicationEngineering?.models[
-      idApplicationEngModel
-      ];
     this.treeItemSelected = "model";
     this.treeIdItemSelected = modelSelected.id;
 
@@ -504,6 +457,7 @@ export default class ProjectService {
       ].adaptations[idAdaptation].id;
     this.raiseEventUpdateSelected(this.treeItemSelected);
   }
+
   updateApplicationSelected(idPl: number, idApplication: number) {
     this.productLineSelected = idPl;
     this.applicationSelected = idApplication;
@@ -531,8 +485,6 @@ export default class ProjectService {
     this.treeItemSelected = "domainEngineering";
     this.raiseEventUpdateSelected(this.treeItemSelected);
   }
-
-
 
   updateScopeSelectedOri(scopeModelId?: string) {
     if (!scopeModelId) {
@@ -589,9 +541,6 @@ export default class ProjectService {
       callback(e);
     }
   }
-  //Search Model functions_ END***********
-
-  //Language functions_ START***********
 
   public get languages(): Language[] {
     return this._languages;
@@ -614,8 +563,8 @@ export default class ProjectService {
     }
   }
 
-  getLanguagesByUser(): Language[] {
-    let user = this.getUser();
+  async getLanguagesByUser(): Promise<Language[]> {
+    const user = this.getUser();
     return this.languageUseCases.getLanguagesByUser(user);
   }
 
@@ -637,32 +586,6 @@ export default class ProjectService {
 
   getLanguagesDetailCll(callback: any) {
     return this.languageUseCases.getLanguagesDetailCll(callback);
-  }
-
-  createLanguage(callback: any, language: any) {
-    let user = this.getUser();
-    if (user) {
-      language.abstractSyntax = JSON.parse(language.abstractSyntax);
-      language.concreteSyntax = JSON.parse(language.concreteSyntax);
-      language.semantics = JSON.parse(language.semantics);
-      return this.languageUseCases.createLanguage(callback, language, user);
-    }
-  }
-
-  updateLanguage(callback: any, language: any, languageId: string) {
-    let user = this.getUser();
-    if (user) {
-      language.id = languageId;
-      language.abstractSyntax = JSON.parse(language.abstractSyntax);
-      language.concreteSyntax = JSON.parse(language.concreteSyntax);
-      language.semantics = JSON.parse(language.semantics);
-      return this.languageUseCases.updateLanguage(callback, language, user);
-    }
-  }
-
-  deleteLanguage(callback: any, languageId: string) {
-    let user = this.getUser();
-    return this.languageUseCases.deleteLanguage(callback, languageId, user);
   }
 
   existDomainModel(language: string): boolean {
@@ -711,39 +634,6 @@ export default class ProjectService {
     return false;
   }
 
-  addLanguagesDetailListener(listener: any) {
-    this.loadLanguagesListeners.push(listener);
-  }
-
-  removeLanguagesDetailListener(listener: any) {
-    this.loadLanguagesListeners[listener] = null;
-  }
-
-  raiseEventLanguagesDetail(language: Language[]) {
-    let me = this;
-    let e = new LanguagesDetailEventArg(me, language);
-    for (let index = 0; index < me.loadLanguagesListeners.length; index++) {
-      let callback = this.loadLanguagesListeners[index];
-      callback(e);
-    }
-  }
-
-  getLanguagesByType(languageType: string, _languages: Language[]): Language[] {
-    return this.languageUseCases.getLanguagesByType(languageType, _languages);
-  }
-
-  languageExist(languageName: string): Boolean {
-    return this.languageUseCases.getLanguageByName(
-      languageName,
-      this._languages
-    )
-      ? true
-      : false;
-  }
-
-  //Language functions_ END***********
-
-  //Project functions_ START***********
   public get project(): Project {
     return this._project;
   }
@@ -1009,9 +899,8 @@ export default class ProjectService {
     }
   }
 
-  refreshLanguageList() {
-    this._languages = this.getLanguagesByUser();
-    this.raiseEventLanguagesDetail(this._languages);
+  async refreshLanguageList(): Promise<void> {
+    this._languages = await this.getLanguagesByUser();
   }
 
   renameItemProject(newName: string) {
@@ -1433,16 +1322,6 @@ export default class ProjectService {
     }
   }
 
-  // getLanguagesByType(language: string) {
-  //   if (this.languages) {
-  //     for (let index = 0; index < this.languages.length; index++) {
-  //       if (this.languages[index].name === language) {
-  //         return this.languages[index];
-  //       }
-  //     }
-  //   }
-  // }
-
   createRelationship(
     model: Model,
     name: string,
@@ -1581,12 +1460,6 @@ export default class ProjectService {
           modelLookupResult.plIdx,
           modelLookupResult.appIdx,
           modelLookupResult.adapIdx,
-          modelLookupResult.modelIdx
-        );
-        break;
-      case "ApplicationEng":
-        this.modelApplicationEngSelected(
-          modelLookupResult.plIdx,
           modelLookupResult.modelIdx
         );
         break;

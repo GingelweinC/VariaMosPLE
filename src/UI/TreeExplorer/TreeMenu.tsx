@@ -854,9 +854,6 @@ class TreeMenu extends Component<Props, State> {
     // 3) Forzar la carga de lenguajes (dispara listeners)
     try { this.props.projectService.refreshLanguageList?.(); } catch { }
     let me = this;
-    me.props.projectService.addLanguagesDetailListener(
-      this.projectService_addListener
-    );
     me.props.projectService.addUpdateSelectedListener(
       this.viewMenuTree_addListener
     );
@@ -1268,7 +1265,7 @@ class TreeMenu extends Component<Props, State> {
       },
     };
 
-    add[language.type]();
+    add[language.type.toUpperCase()]();
   }
 
 
@@ -1546,11 +1543,13 @@ class TreeMenu extends Component<Props, State> {
     if (this.state.optionAllowDelete) {
       items.push(<Dropdown.Item href="#" onClick={this.showDeleteModal} id="deleteItem">Delete</Dropdown.Item>);
     }
+    console.log("Rendering language options for new model creation");
+    console.log("Available languages:", this.props.projectService.languages);
     if (this.state.optionAllowModelEnable) {
       let children = [];
       for (let i = 0; i < this.props.projectService.languages.length; i++) {
         const language: Language = this.props.projectService.languages[i];
-        if (language.type === this.state.newSelected) {
+        if (language.type.toUpperCase() === this.state.newSelected) {
           children.push(<Dropdown.Item href="#" onClick={() => this.addNewEModel(language)} id="newModel" key={i}>{language.name}</Dropdown.Item>)
         }
       }

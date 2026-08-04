@@ -8,13 +8,6 @@ export default class LanguageUseCases {
   private externalFunctionService: ExternalFuntionService =
     new ExternalFuntionService();
 
-  getLanguagesByType(languageType: string, languages: Language[]): Language[] {
-    const languagesFilter: Language[] = languages.filter(
-      (language) => language.type === languageType
-    );
-    return languagesFilter;
-  }
-
   getLanguageByName(languageName: string, languages: Language[]): Language {
     const languagesFilter: Language = languages.filter(
       (language) => language.name === languageName
@@ -22,8 +15,8 @@ export default class LanguageUseCases {
     return languagesFilter;
   }
 
-  getLanguagesByUser(user:string): Language[] {
-    return this.languageService.getLanguagesByUser(user);
+  async getLanguagesByUser(user: string): Promise<Language[]> {
+    return await this.languageService.getLanguagesByUser(user);
   }
 
   getLanguagesDetail(): Language[] {
@@ -32,18 +25,6 @@ export default class LanguageUseCases {
 
   getLanguagesDetailCll(callBack: any) {
     return this.languageService.getLanguages(callBack);
-  }
-
-  createLanguage(callback: any, language: Language, user: string) {
-    return this.languageService.createLanguage(callback, language, user);
-  }
-
-  updateLanguage(callback: any, language: Language, user: string) {
-    return this.languageService.updateLanguage(callback, language, user);
-  }
-
-  deleteLanguage(callback: any, languageId: string, user: string) {
-    return this.languageService.deleteLanguage(callback, languageId, user);
   }
 
   callExternalFuntion(callback: any, externalFunction: ExternalFuntion): any[] {

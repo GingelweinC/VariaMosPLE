@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import ProjectService from "../../Application/Project/ProjectService";
 import { Project } from "../../Domain/ProductLineEngineering/Entities/Project";
 import * as alertify from "alertifyjs";
-import LanguageManagement from "./LanguageManagement";
 import { Config } from "../../Config";
 
 interface Props {
@@ -187,11 +186,7 @@ class ProjectManagement extends Component<Props, State> {
       return false;
     }
 
-    let languages = this.props.projectService.getLanguagesByUser();
-
     this.props.projectService.updateProjectName(this.state.projectName);
-
-    this.props.projectService.raiseEventLanguagesDetail(languages);
 
     this.props.projectService.saveProject();
     document.getElementById("openModal")?.click();
@@ -285,9 +280,6 @@ class ProjectManagement extends Component<Props, State> {
                           href="#list-settings"
                           role="tab"
                           aria-controls="settings"
-                          onClick={() =>
-                            LanguageManagement.bind(this.forceUpdate())
-                          }
                         >
                           Settings
                         </a>
@@ -300,9 +292,6 @@ class ProjectManagement extends Component<Props, State> {
                         href="#list-help"
                         role="tab"
                         aria-controls="help"
-                        onClick={() =>
-                          LanguageManagement.bind(this.forceUpdate())
-                        }
                       >
                         Help
                       </a>
@@ -493,16 +482,6 @@ class ProjectManagement extends Component<Props, State> {
                         >
                           Upload
                         </button>
-                      </div>
-                      <div
-                        className="tab-pane fade"
-                        id="list-settings"
-                        role="tabpanel"
-                        aria-labelledby="list-settings-list"
-                      >
-                        <LanguageManagement
-                          projectService={this.props.projectService}
-                        />
                       </div>
                       <div
                         className="tab-pane fade"

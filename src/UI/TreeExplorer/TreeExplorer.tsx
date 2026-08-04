@@ -7,7 +7,6 @@ import { Application } from "../../Domain/ProductLineEngineering/Entities/Applic
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
 import { ProductLine } from "../../Domain/ProductLineEngineering/Entities/ProductLine";
 import { ScopeSPL } from "../../Domain/ProductLineEngineering/Entities/ScopeSPL";
-import ScopeModal from "../Scope/ScopeModal";
 import {
   getCurrentConstraints,
   setModelConstraints,
@@ -64,8 +63,6 @@ class TreeExplorer extends Component<Props, State> {
     this.doubleClickLpSelected= this.doubleClickLpSelected.bind(this);
 
     this.btn_viewDomainModel = this.btn_viewDomainModel.bind(this);
-    this.btn_viewApplicationEngModel =
-      this.btn_viewApplicationEngModel.bind(this);
     this.btn_viewApplicationModel = this.btn_viewApplicationModel.bind(this);
     this.btn_viewAdaptationModel = this.btn_viewAdaptationModel.bind(this);
 
@@ -157,14 +154,6 @@ class TreeExplorer extends Component<Props, State> {
         contextMenuY: e.event.clientY
       })
     }
-  }
-
-  btn_viewApplicationEngModel(idPl: number, idApplicationEngModel: number) {
-    this.props.projectService.modelApplicationEngSelected(
-      idPl,
-      idApplicationEngModel
-    );
-    this.props.projectService.saveProject();
   }
 
   updateLpSelected(e: any, idPl: number) {

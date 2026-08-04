@@ -225,9 +225,6 @@ class ProjectAwareness extends Component<Props, State> {
           case 'domainEngineering':
             this.props.projectService.modelDomainSelected(modelLocation.plIndex, modelLocation.modelIndex);
             break;
-          case 'applicationEngineering':
-            this.props.projectService.modelApplicationEngSelected(modelLocation.plIndex, modelLocation.modelIndex);
-            break;
           case 'application':
             this.props.projectService.modelApplicationSelected(
               modelLocation.plIndex,

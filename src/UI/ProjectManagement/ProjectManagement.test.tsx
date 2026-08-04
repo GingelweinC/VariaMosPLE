@@ -210,9 +210,7 @@ describe('Testing the methods', ()=>{
 
       //Arrange
       let getElementByIdMock = jest.spyOn(document, "getElementById");
-      let getLanguagesDetailMock = jest.spyOn(ProjectService.prototype, "getLanguagesDetail");
       let updateProjectNameMock = jest.spyOn(ProjectService.prototype, "updateProjectName");
-      let raiseEventLanguagesDetailMock = jest.spyOn(ProjectService.prototype, "raiseEventLanguagesDetail");
       let saveProjectMock = jest.spyOn(ProjectService.prototype, "saveProject");
 
       let project_service = new ProjectService();
@@ -236,8 +234,6 @@ describe('Testing the methods', ()=>{
 
       expect(updateProjectNameMock).toHaveBeenCalledTimes(1);
       expect(updateProjectNameMock).toHaveBeenCalledWith(state.projectName);
-
-      expect(raiseEventLanguagesDetailMock).toHaveBeenCalledTimes(1);
 
       expect(saveProjectMock).toHaveBeenCalledTimes(1);
       expect(saveProjectMock).toHaveBeenCalledWith();

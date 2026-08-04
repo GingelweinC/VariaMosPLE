@@ -161,26 +161,6 @@ describe('Each method should be functional',()=>{
 
     });
 
-    test('btn_viewApplicationEngModel should use ProjectServices', ()=>{
-
-        //Arrange
-        let modelApplicationEngSelectedMock = jest.spyOn(ProjectService.prototype, "modelApplicationEngSelected").mockImplementation(() => {});
-        let saveProjectMock = jest.spyOn(ProjectService.prototype, "saveProject").mockImplementation(() => {});
-        let project_service = new ProjectService();
-        let treeExplorer = new TreeExplorer(project_service);
-        // @ts-ignore
-        treeExplorer.props.projectService = project_service;
-
-        //Act
-        treeExplorer.btn_viewApplicationEngModel(345, 667);
-
-        //Assert
-        expect(modelApplicationEngSelectedMock).toHaveBeenCalledTimes(1);
-        expect(modelApplicationEngSelectedMock).toHaveBeenCalledWith(345,667);
-        expect(saveProjectMock).toHaveBeenCalledTimes(1);
-        expect(saveProjectMock).toHaveBeenCalledWith();
-
-    });
     test('updateLpSelected should use ProjectServices', ()=>{
 
         //Arrange

@@ -22,23 +22,18 @@ export default class LanguageService {
     return languages;
   }
 
-  getLanguagesByUser(user: string): Language[] { 
-    let languages: Language[] = [];
+  async getLanguagesByUser(user: string): Promise<Language[]> {
     try {
-      let url = "/languagesbyuser/" + user;
-      LANGUAGES_CLIENT.get(url).then((res) => {
-        let responseAPISuccess: ResponseAPISuccess = new ResponseAPISuccess();
-        responseAPISuccess = Object.assign(responseAPISuccess, res.data);
+      const res = await LANGUAGES_CLIENT.get("/");
+      const languages: Language[] = res.data;
 
-        if (responseAPISuccess.message?.includes("Error"))
-          throw new Error(JSON.stringify(res.data));
+      console.log("Languages retrieved for user " + user + ": ", languages);
 
-        languages = Object.assign(languages, responseAPISuccess.data);
-      });
+      return languages;
     } catch (error) {
-      console.log("Something wrong in getLanguageDetail Service: " + error);
+      console.log("Something wrong in getLanguageDetail Service:", error);
+      return [];
     }
-    return languages;
   }
 
   createLanguage(callback: any, language: Language, user: string) {
