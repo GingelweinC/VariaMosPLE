@@ -366,11 +366,6 @@ class TreeExplorer extends Component<Props, State> {
             treeCollaborationService.syncCurrentProjectState(this.props.projectService);
           }
 
-          // PASO 2: Observar cambios en el tree colaborativo
-          const unsubscribe = treeCollaborationService.observeTreeChanges((changes) => {
-            this.handleCollaborativeTreeChanges(changes);
-          });
-
           // Verificar si la conexión está completamente sincronizada
           if (connectionStatus.connected && connectionStatus.synced) {
             // Mostrar mensaje de éxito por 5 segundos y luego ocultar
@@ -511,43 +506,6 @@ class TreeExplorer extends Component<Props, State> {
     return totalModels;
   }
 
-  // Buscar un modelo por ID en todo el proyecto
-  findModelById(modelId: string): any {
-    const project = this.props.projectService.project;
-
-    for (const productLine of project.productLines) {
-      // Buscar en modelos de scope
-      if (productLine.scope?.models) {
-        const found = productLine.scope.models.find((model: any) => model.id === modelId);
-        if (found) return found;
-      }
-
-      // Buscar en modelos de domain engineering
-      if (productLine.domainEngineering?.models) {
-        const found = productLine.domainEngineering.models.find((model: any) => model.id === modelId);
-        if (found) return found;
-      }
-
-      // Buscar en modelos de application engineering
-      if (productLine.applicationEngineering?.models) {
-        const found = productLine.applicationEngineering.models.find((model: any) => model.id === modelId);
-        if (found) return found;
-      }
-
-      // Buscar en applications
-      if (productLine.applicationEngineering?.applications) {
-        for (const application of productLine.applicationEngineering.applications) {
-          if (application.models) {
-            const found = application.models.find((model: any) => model.id === modelId);
-            if (found) return found;
-          }
-        }
-      }
-    }
-
-    return null;
-  }
-
   // Validar si una operación del tree es válida
   isValidTreeOperation(operation: any): boolean {
     return operation &&
@@ -563,19 +521,12 @@ class TreeExplorer extends Component<Props, State> {
       return;
     }
 
-    const totalModels = treeState.productLines.reduce((total: number, pl: any) => total + (pl.models?.length || 0), 0);
-    const totalApplications = treeState.productLines.reduce((total: number, pl: any) => total + (pl.applications?.length || 0), 0);
-
     try {
       // Obtener el proyecto actual
       const project = this.props.projectService.getProject();
       if (!project) {
         return;
       }
-
-      // Contar elementos antes de la sincronización
-      const beforeCount = project.productLines?.length || 0;
-      const beforeModelsCount = this.countAllModels(project);
 
       //  PASO 1: Preservar contenido de modelos existentes antes de limpiar
       // Crear mapa para preservar contenido de modelos
@@ -737,10 +688,6 @@ class TreeExplorer extends Component<Props, State> {
         return newPL;
       });
 
-      // Contar elementos después de la sincronización
-      const afterCount = project.productLines?.length || 0;
-      const afterModelsCount = this.countAllModels(project);
-
       // Forzar actualización de la UI
       this.forceUpdate();
     } catch (error) {
@@ -771,7 +718,7 @@ class TreeExplorer extends Component<Props, State> {
   handleRemoteAddModel(modelData: any) {
     try {
       // Verificar si el modelo ya existe para evitar duplicados (usando función mejorada)
-      const existingModel = this.findModelById(modelData.id);
+      const existingModel = this.props.projectService.findModelById(this.props.projectService.project, modelData.id);
       if (existingModel) {
         return;
       }
@@ -828,7 +775,7 @@ class TreeExplorer extends Component<Props, State> {
   handleRemoteDeleteModel(modelData: any) {
     try {
       // Usar la función mejorada de búsqueda
-      const model = this.findModelById(modelData.id);
+      const model = this.props.projectService.findModelById(this.props.projectService.project, modelData.id);
 
       if (model) {
         // Usar la lógica existente de eliminación del ProjectService
@@ -864,7 +811,7 @@ class TreeExplorer extends Component<Props, State> {
 
       if (itemData.itemType === 'model') {
         // Usar la función mejorada de búsqueda
-        const model = this.findModelById(itemData.id);
+        const model = this.props.projectService.findModelById(this.props.projectService.project, itemData.id);
 
         if (model) {
           // Verificar si es una operación de renombrado simple o cambio de propiedades múltiples
@@ -917,11 +864,6 @@ class TreeExplorer extends Component<Props, State> {
 
     // Forzar actualización de la UI
     this.forceUpdate();
-
-    // Mostrar notificación al usuario
-    const notificationText = itemData.newName
-      ? `${itemData.itemType} renombrado: ${itemData.oldName} -> ${itemData.newName}`
-      : `${itemData.itemType} propiedades actualizadas`;
   }
 
   // Manejar actualización remota de scope (Technical Metrics)
@@ -1412,33 +1354,6 @@ class TreeExplorer extends Component<Props, State> {
         {!shouldBlockTree && (
           <CollaborationPanel projectService={this.props.projectService} />
         )}
-
-        {/* {this.state.showScopeModal && (
-          <ScopeModal
-          show={this.state.showScopeModal}
-          initialScope={
-            this.props.projectService.project.productLines[this.state.currentProductLineIndex].scope
-          }
-          domain={
-            this.props.projectService.project.productLines[this.state.currentProductLineIndex].domain
-          }
-          onHide={() => this.setState({ showScopeModal: false })}
-          onSave={(updatedScope: ScopeSPL) => {
-            this.props.projectService.project.productLines[this.state.currentProductLineIndex].scope = updatedScope;
-            const projectInfo = this.props.projectService.getProjectInformation();
-            this.props.projectService.saveProjectInServer(
-              projectInfo,
-              (response) => {
-                console.log("Proyecto guardado exitosamente:", response);
-              },
-              (error) => {
-                console.error("Error guardando el proyecto:", error);
-              }
-            );
-          }}
-          
-        />  
-        )} */}
       </div>
       
     );
