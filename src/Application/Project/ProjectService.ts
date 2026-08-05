@@ -227,7 +227,7 @@ export default class ProjectService {
   loadExternalFunctions(languageName: string) {
     let me = this;
     let language = this._languages.filter(
-      (language) => language.name == languageName
+      (language) => language.name === languageName
     );
     let callback = function (data: any) {
       me._externalFunctions = data;
@@ -247,7 +247,7 @@ export default class ProjectService {
   getIdCurrentProductLine() {
     for (let idProductLine = 0; idProductLine < this.project.productLines.length; idProductLine++) {
       const productLine = this.project.productLines[idProductLine];
-      if (productLine.scope == this.getScope()) {
+      if (productLine.scope === this.getScope()) {
         return idProductLine;
       }
     }
@@ -278,9 +278,7 @@ export default class ProjectService {
     return null;
   }
   getScope() {
-    const selectedId = this.treeIdItemSelected;
     for (const productLine of this.project.productLines) {
-      const scopeModels = productLine?.scope?.models || [];
       const scope = productLine?.scope;
       if (scope) {
         return scope;
@@ -763,7 +761,6 @@ export default class ProjectService {
   }
 
   saveConfigurationInServer(configurationInformation: ConfigurationInformation, successCallback: any, errorCallback: any): void {
-    let me = this;
     let user = this.getUser();
 
     let projectInformation = this.getProjectInformation();
@@ -796,7 +793,6 @@ export default class ProjectService {
 
 
   getAllConfigurations(successCallback: any, errorCallback: any) {
-    let me = this;
     let user = this.getUser();
     let projectInformation = this.getProjectInformation();
     if (!projectInformation) {
@@ -832,7 +828,6 @@ export default class ProjectService {
   }
 
   deleteConfigurationInServer(configurationId: string, successCallback?: any, errorCallback?: any): void {
-    let me = this;
     let user = this.getUser();
     let projectInformation = this.getProjectInformation();
     if (!projectInformation) {
@@ -1552,8 +1547,6 @@ export default class ProjectService {
   async solveConsistencyAttributeModel(applicationModel: Model) {
     const domainModel = this.findModelById(this.project, applicationModel.sourceModelIds[0]);
     const domainModelElementsBackup = JSON.stringify(domainModel.elements);
-    type parsedElements = {}
-    const applicationElements = applicationModel.elements
     const getAppFeaturesId = applicationModel.elements.map(element => element.name)
     domainModel.elements.forEach((domElement) => {
       if (domElement.type === "ConcreteFeature" || domElement.type === "RootFeature") {
