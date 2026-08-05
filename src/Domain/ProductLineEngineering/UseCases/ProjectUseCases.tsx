@@ -654,16 +654,6 @@ export default class ProjectUseCases {
       for (let pl = 0; pl < project.productLines.length; pl++) {
         const productLine: ProductLine = project.productLines[pl];
 
-        // Nuevo Find Scope, faltaba de base
-        if (productLine.scope && productLine.scope.models) {
-          for (let m = 0; m < productLine.scope.models.length; m++) {
-            const model: Model = productLine.scope.models[m];
-            if (model.id == uid) {
-              return model;
-            }
-          }
-        }
-
         // Buscar en domainEngineering
         for (let m = 0; m < productLine.domainEngineering.models.length; m++) {
           const model: Model = productLine.domainEngineering.models[m];
