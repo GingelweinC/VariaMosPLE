@@ -3,159 +3,59 @@ import { LANGUAGES_CLIENT } from "../../Infraestructure/AxiosConfig";
 
 export default class LanguageService { 
 
-  getLanguagesDetail(): Language[] {
-    let languages: Language[] = [];
-
+  async getLanguageById(languageId: string): Promise<Language> {
     try {
-      LANGUAGES_CLIENT.get("/languages/detail").then((res) => {
-        let responseAPISuccess: ResponseAPISuccess = new ResponseAPISuccess();
-        responseAPISuccess = Object.assign(responseAPISuccess, res.data);
-
-        if (responseAPISuccess.message?.includes("Error"))
-          throw new Error(JSON.stringify(res.data));
-
-        languages = Object.assign(languages, responseAPISuccess.data);
-      });
+      const res = await LANGUAGES_CLIENT.get("/" + languageId);
+      const language: Language = res.data;
+      return language;
     } catch (error) {
-      console.log("Something wrong in getLanguageDetail Service: " + error);
+      console.log("Something wrong in getLanguageById Service:", error);
+      throw error;
     }
-    return languages;
   }
 
-  async getLanguagesByUser(user: string): Promise<Language[]> {
+  async getElementsByLanguageId(languageId: string): Promise<any> {
+    try {
+      const res = await LANGUAGES_CLIENT.get("/" + languageId + "/element-types");
+      const elements: any = res.data;
+      return elements;
+    } catch (error) {
+      console.log("Something wrong in getElementsByLanguageId Service:", error);
+      throw error;
+    }
+  }
+
+  async getReificationsByLanguageId(languageId: string): Promise<any> {
+    try {
+      const res = await LANGUAGES_CLIENT.get("/" + languageId + "/reification-types");
+      const reifications: any = res.data;
+      return reifications;
+    } catch (error) {
+      console.log("Something wrong in getReificationsByLanguageId Service:", error);
+      throw error;
+    }
+  }
+
+  async getRelationsByLanguageId(languageId: string): Promise<any> {
+    try {
+      const res = await LANGUAGES_CLIENT.get("/" + languageId + "/relation-types");
+      const relations: any = res.data;
+      return relations;
+    } catch (error) {
+      console.log("Something wrong in getRelationsByLanguageId Service:", error);
+      throw error;
+    }
+  }
+
+  async getLanguagesByUser(): Promise<Language[]> {
     try {
       const res = await LANGUAGES_CLIENT.get("/");
       const languages: Language[] = res.data;
-
-      console.log("Languages retrieved for user " + user + ": ", languages);
 
       return languages;
     } catch (error) {
       console.log("Something wrong in getLanguageDetail Service:", error);
       return [];
-    }
-  }
-
-  createLanguage(callback: any, language: Language, user: string) {
-    let response: string;
-
-    // Standard Request Start
-    let requestBody = {
-      transactionId: "createLanguage_Frontend",
-      data: language,
-      user: user
-    };
-    // Standard Request End
-
-    try {
-      LANGUAGES_CLIENT.post("/languages", requestBody).then((res) => {
-        let responseAPISuccess: ResponseAPISuccess = new ResponseAPISuccess();
-        responseAPISuccess = Object.assign(responseAPISuccess, res.data);
-        response = responseAPISuccess.message;
-
-        if (responseAPISuccess.message?.includes("Error"))
-          throw new Error(JSON.stringify(res.data));
-
-        callback(response);
-      }).catch(function (error) {
-        console.log(JSON.stringify(error));
-        let response = {
-          messageError: "Something wrong in createLanguage Service."
-        }
-        if (error.response) { 
-          if (error.response.data) { 
-            if (error.response.data.data) { 
-              response = JSON.parse(error.response.data.data);
-            }
-          }
-        }
-        callback(response);
-      });
-    } catch (error) {
-      response = "Something wrong in createLanguage Service: " + error;
-      console.log(response);
-      callback(response);
-    }
-  }
-
-  deleteLanguage(callback: any, languageId: string, user: string) {
-    let response: string;
-
-    // Standard Request Start
-    let requestBody = {
-      transactionId: "deleteLanguage_Frontend",
-    };
-    // Standard Request End
-
-    try {
-      LANGUAGES_CLIENT.delete("/languages/" + languageId + "/" + user, {data: requestBody}).then((res) => {
-        let responseAPISuccess: ResponseAPISuccess = new ResponseAPISuccess();
-        responseAPISuccess = Object.assign(responseAPISuccess, res.data);
-        response = responseAPISuccess.message;
-
-        if (responseAPISuccess.message?.includes("Error"))
-          throw new Error(JSON.stringify(res.data));
-
-        callback(response);
-      }).catch(function (error) {
-        console.log(JSON.stringify(error));
-        let response = {
-          messageError: "Something wrong in createLanguage Service."
-        }
-        if (error.response) { 
-          if (error.response.data) { 
-            if (error.response.data.data) { 
-              response = JSON.parse(error.response.data.data);
-            }
-          }
-        }
-        callback(response);
-      });
-    } catch (error) {
-      response = "Something wrong in deleteLanguage Service: " + error;
-      console.log(response);
-      callback(response);
-    }
-  }
-
-  updateLanguage(callback: any, language: Language, user: string) {
-    let response: string;
-
-    // Standard Request Start
-    let requestBody = {
-      transactionId: "updateLanguage_Frontend",
-      data: language,
-      user: user
-    };
-
-    try {
-      LANGUAGES_CLIENT.put("/languages/" + language.id, requestBody).then((res) => {
-        let responseAPISuccess: ResponseAPISuccess = new ResponseAPISuccess();
-        responseAPISuccess = Object.assign(responseAPISuccess, res.data);
-        response = responseAPISuccess.message;
-
-        if (responseAPISuccess.message?.includes("Error"))
-          throw new Error(JSON.stringify(res.data));
-
-        callback(response);
-      }).catch(function (error) {
-        console.log(JSON.stringify(error));
-        let response = {
-          messageError: "Something wrong in createLanguage Service."
-        }
-        if (error.response) { 
-          if (error.response.data) { 
-            if (error.response.data.data) { 
-              response = JSON.parse(error.response.data.data);
-            }
-          }
-        }
-        callback(response);
-      });
-    } catch (error) {
-      response = "Something wrong in createLanguage Service: " + error;
-      console.log(response);
-      callback(response);
     }
   }
 
