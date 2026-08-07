@@ -1,6 +1,7 @@
 import { Relationship } from "./Relationship";
 import { Element } from "./Element";
 import { SourceModelElement } from "./SourceModelElement";
+import { Reification } from "./Reification";
 
 export class Model {
   id: string;
@@ -11,6 +12,7 @@ export class Model {
   consistencyError: string;
   elements: Element[] = [];
   relationships: Relationship[] = [];
+  reifications: Reification[] = [];
   typeEngineering?: string;
   constraints?: string;
   sourceModelIds: string[] = [];

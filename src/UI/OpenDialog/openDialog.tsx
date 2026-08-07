@@ -1,33 +1,15 @@
 import { useEffect, useState } from "react";
 
 import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
-import Spinner from "react-bootstrap/Spinner";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Dropdown from "react-bootstrap/Dropdown";
-import Editor from "react-simple-code-editor";
 import { ProjectInformation } from "../../Domain/ProductLineEngineering/Entities/ProjectInformation";
 
-import { IoMdTrash } from 'react-icons/io';
-import { MdEdit } from "react-icons/md";
+import { IoMdTrash } from "react-icons/io";
 
 //Import the code to run the query
-import {
-  runQuery,
-  sanitizeConcreteSemantics,
-  syncConcreteSemantics,
-  syncSemantics,
-} from "../../Domain/ProductLineEngineering/UseCases/QueryUseCases";
-import { Query } from "../../Domain/ProductLineEngineering/Entities/Query";
 import ProjectService from "../../Application/Project/ProjectService";
-import { set } from "immer/dist/internal";
-import { json } from "react-router-dom";
-import { Project } from "../../Domain/ProductLineEngineering/Entities/Project";
 
 type OpenDialogProps = {
   show: boolean;
@@ -39,38 +21,41 @@ export default function OpenDialog({
   show,
   handleCloseCallback,
   projectService,
-}: OpenDialogProps) {
+}: Readonly<OpenDialogProps>) {
   const [key, setKey] = useState("templateProjects");
-  const [translatorEndpoint, setTranslatorEndpoint] = useState(
-    ""
-  );
-  const [query, setQuery] = useState("");
-  const [queryInProgress, setQueryInProgress] = useState(false);
-  const [resultsReady, setResultsReady] = useState(false);
-  const [results, setResults] = useState([]);
-  const [semantics, setSemantics] = useState("");
-  const [solverSemantics, setSolverSemantics] = useState("\n\n\n");
-  const [selectedSolver, setSelectedSolver] = useState("swi");
-  const [semanticsInProgress, setSemanticsInProgress] = useState(false);
-  const [semanticsReady, setSemanticsReady] = useState(false);
+  const [results] = useState([]);
   const [savedQueries, setSavedQueries] = useState({});
-  const [queryName, setQueryName] = useState("");
   // NUEVAS VARIABLES
-  const [owned_projects, setOwnedProjects] = useState<ProjectInformation[]>([]);
-  const [sharedProjects, setSharedProjects] = useState<ProjectInformation[]>([]); 
-  // 
+  const [ownedProjects, setOwnedProjects] = useState<ProjectInformation[]>([]);
+  const [sharedProjects, setSharedProjects] = useState<ProjectInformation[]>(
+    [],
+  );
+  //
   const [templateProjects, setTemplateProjects] = useState([]);
-  const [users, setUsers] = useState(["Hugo", "Paco", "Luis"]);
   const [searchTerm, setSearchTerm] = useState("");
 
   //Load the saved queries from the local storage on load
   useEffect(() => {
+    // MODIFICADO
+    const getProjectsByUser = () => {
+      if (!projectService.isGuessUser()) {
+        setKey("privateProjects");
+      }
+      projectService.getProjectsByUser(
+        getProjectsByUserSuccessCallback,
+        getProjectsByUserErrorCallback,
+      );
+      projectService.getTemplateProjects(
+        getTemplateProjectsSuccessCallback,
+        getTemplateProjectsErrorCallback,
+      );
+    };
     const savedQueries = localStorage.getItem("savedQueries");
     if (savedQueries) {
       setSavedQueries(JSON.parse(savedQueries));
     }
     getProjectsByUser();
-  }, []);
+  }, [projectService]);
 
   useEffect(() => {
     localStorage.setItem("savedQueries", JSON.stringify(savedQueries));
@@ -80,116 +65,27 @@ export default function OpenDialog({
     localStorage.setItem("currentResults", JSON.stringify(results));
   }, [results]);
 
-  //Handle setting the value of the endpoint
-  const handleSetTranslatorEndpoint = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setTranslatorEndpoint(event.target.value);
-  };
-
-  //Handle setting the value of the query
-  const handleSetQuery = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setQuery(event.target.value);
-  };
-
-  const populateResultsTab = (results) => {
-    setResults((prevResults) => [...prevResults, results]);
-  };
-
-  const handleSyncSemantics = async () => {
-    setSemanticsInProgress(true);
-    setSemanticsReady(false);
-    console.log("Syncing Semantics for the model");
-    const result = await syncSemantics(projectService, translatorEndpoint);
-    console.log("Result,", result);
-    if (result) {
-      setSemanticsReady(true);
-      setSemantics(result);
-    }
-    setSemanticsInProgress(false);
-  };
-
-  // Handle getting the concrete semantics for the model
-  const handleGetConcreteSemantics = async (lang: string) => {
-    console.log(`Getting concrete semantics for the model with lang ${lang}`);
-    const result = await syncConcreteSemantics(
-      projectService,
-      translatorEndpoint,
-      lang
-    );
-    if (result) {
-      setSolverSemantics(sanitizeConcreteSemantics(result, projectService));
-    }
-  };
-
-  //Handle submiting the query
-  const handleSubmitQuery = async () => {
-    setQueryInProgress(true);
-    setResultsReady(false);
-    console.log("Submit query", translatorEndpoint, query);
-    const query_object = new Query(JSON.parse(query));
-    const result = await runQuery(
-      projectService,
-      translatorEndpoint,
-      query_object
-    );
-    console.log("Result", result);
-    //Populate the results tab
-    if (result || (["sat", "solve", "nsolve"].includes(query_object.operation) && result === false)) {
-      console.log("Populating results tab with ", result)
-      console.log("Query object", query_object)
-      populateResultsTab(result);
-      setResultsReady(true);
-    }
-    setQueryInProgress(false);
-  };
-
-  const clearResults = () => {
-    setResults([]);
-    setResultsReady(false);
-    setKey("query");
-  };
-
-  const handleResetModelConfig = () => {
-    projectService.resetModelConfig();
-  };
-
-  const handleSaveQuery = () => {
-    setSavedQueries((prevQueries) => ({
-      ...prevQueries,
-      [queryName]: JSON.parse(query),
-    }));
-    //savedQueries[queryName] = (JSON.parse(query));
-    //setSavedQueries(savedQueries);
-  };
-
-
-  // MODIFICADO
-  const getProjectsByUser = () => {
-    if (!projectService.isGuessUser()) {
-      setKey("privateProjects");
-    }
-    projectService.getProjectsByUser(getProjectsByUserSuccessCallback, getProjectsByUserErrorCallback);
-    projectService.getTemplateProjects(getTemplateProjectsSuccessCallback, getTemplateProjectsErrorCallback);
-  }
-
-  const getProjectsByUserSuccessCallback = (response: { owned_projects: ProjectInformation[]; shared_projects: ProjectInformation[] }) => {
+  const getProjectsByUserSuccessCallback = (response: {
+    owned_projects: ProjectInformation[];
+    shared_projects: ProjectInformation[];
+  }) => {
     setOwnedProjects(response.owned_projects);
     setSharedProjects(response.shared_projects);
-
-  }
+  };
 
   const getProjectsByUserErrorCallback = (e) => {
     alert(JSON.stringify(e));
-  }
+  };
 
-  const getTemplateProjectsSuccessCallback = (records: ProjectInformation[]) => {
+  const getTemplateProjectsSuccessCallback = (
+    records: ProjectInformation[],
+  ) => {
     setTemplateProjects(records);
-  }
+  };
 
   const getTemplateProjectsErrorCallback = (e) => {
     alert(JSON.stringify(e));
-  }
+  };
 
   const btnProject_onClic = (e) => {
     e.preventDefault();
@@ -197,44 +93,60 @@ export default function OpenDialog({
     let template = JSON.parse(e.target.attributes["data-template"].value);
     projectService.openProjectInServer(projectId, template);
     handleCloseCallback();
-  }
+  };
 
   const btnDeleteProject_onClic = (e) => {
     e.preventDefault();
-    if (window.confirm("Delete this project?") == true) {
-
+    if (window.confirm("Delete this project?")) {
       const targetRow = e.target.closest("tr");
-      if (!targetRow || !targetRow.hasAttribute("data-id")) {
+      if (!targetRow?.hasAttribute("data-id")) {
         console.log("No data-id attribute found in the target row.");
-        return; 
+        return;
       }
-      const projectId = targetRow.getAttribute("data-id");
+      const projectId = targetRow.dataset.id;
 
-      const isOwnedProjects = owned_projects.some((project) => project.id == projectId);
+      const isOwnedProjects = ownedProjects.some(
+        (project) => project.id === projectId,
+      );
 
-      let pi = new ProjectInformation(projectId, null, null, null, false, null, null, null, null, false);
+      let pi = new ProjectInformation(
+        projectId,
+        null,
+        null,
+        null,
+        false,
+        null,
+        null,
+        null,
+        null,
+        false,
+      );
       let successCallback = () => {
         if (isOwnedProjects) {
-          setOwnedProjects((prevProjects) => prevProjects.filter((project) => project.id !== projectId));
+          setOwnedProjects((prevProjects) =>
+            prevProjects.filter((project) => project.id !== projectId),
+          );
+        } else {
+          setSharedProjects((prevProjects) =>
+            prevProjects.filter((project) => project.id !== projectId),
+          );
         }
-        else {
-          setSharedProjects((prevProjects) => prevProjects.filter((project) => project.id !== projectId));
-        }
-      }
+      };
       projectService.deleteProjectInServer(pi, successCallback, null);
     }
-  }
-
+  };
 
   const filterProjects = (projects) => {
     if (!searchTerm) return projects;
     return projects.filter((project) =>
-      project.name.toLowerCase().includes(searchTerm)
+      project.name.toLowerCase().includes(searchTerm),
     );
   };
 
-
-  const renderProjects = (projects: ProjectInformation[], isDeletable: boolean) => {
+  const renderProjects = (
+    projects: ProjectInformation[],
+    isDeletable: boolean,
+  ) => {
     let elements = [];
     if (projects) {
       const filteredProjects = filterProjects(projects);
@@ -244,27 +156,39 @@ export default function OpenDialog({
           <tr key={project.id} data-id={project.id}>
             {/* <a title="Change name" href="#" className="link-project" data-id={project.id} data-template={false} onClick={btnProject_onClic}><MdEdit/></a> */}
             <td>
-              {isDeletable && <a title="Delete project" href="#" className="link-project" data-id={project.id} data-template={false} onClick={btnDeleteProject_onClic}><IoMdTrash /></a>
-            }
+              {isDeletable && (
+                <a
+                  title="Delete project"
+                  href="#"
+                  className="link-project"
+                  data-id={project.id}
+                  data-template={false}
+                  onClick={btnDeleteProject_onClic}
+                >
+                  <IoMdTrash />
+                </a>
+              )}
             </td>
             <td>
-              <a href="#" className="link-project" data-id={project.id} data-template={false} onClick={btnProject_onClic}>
+              <a
+                href="#"
+                className="link-project"
+                data-id={project.id}
+                data-template={false}
+                onClick={btnProject_onClic}
+              >
                 {project.name}
-                {isDeletable && project.template && <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>(Public project, not collaborative allow)</span>}
+                {isDeletable && project.template && (
+                  <span style={{ marginLeft: "8px", fontWeight: "bold" }}>
+                    (Public project, not collaborative allow)
+                  </span>
+                )}
               </a>
             </td>
-            <td>
-              {new Date(project.date).toLocaleString()}
-            </td>
-            <td>
-              {project.description}
-            </td>
-            <td>
-              {project.author}
-            </td>
-            <td>
-              {project.source}
-            </td>
+            <td>{new Date(project.date).toLocaleString()}</td>
+            <td>{project.description}</td>
+            <td>{project.author}</td>
+            <td>{project.source}</td>
           </tr>
         );
         elements.push(element);
@@ -272,7 +196,9 @@ export default function OpenDialog({
     }
     return (
       <table>
-        <thead style={{ position: 'sticky', top: '0', backgroundColor: 'white' }}>
+        <thead
+          style={{ position: "sticky", top: "0", backgroundColor: "white" }}
+        >
           <tr>
             <th></th>
             <th>Name</th>
@@ -282,42 +208,26 @@ export default function OpenDialog({
             <th>Source</th>
           </tr>
         </thead>
-        <tbody>
-          {elements}
-        </tbody>
+        <tbody>{elements}</tbody>
       </table>
-    )
-  }
-
-  const renderUsers = () => {
-    let elements = [];
-    if (users) {
-      for (let i = 0; i < users.length; i++) {
-        let user = users[i];
-        const element = (<li><span>{user}</span></li>);
-        elements.push(element);
-      }
-    }
-    return (
-      <ul>{elements}</ul>
-    )
-  }
+    );
+  };
 
   const btnImportProject_onClick = () => {
-    var uploadInput = document.getElementById("uploadInput");
+    let uploadInput = document.getElementById("uploadInput");
     uploadInput.click();
-  }
+  };
 
   const uploadInput_onChange = (e) => {
-    var uploadInput = e.target;
-    var file = uploadInput.files[0]; // Get the selected file
+    let uploadInput = e.target;
+    let file = uploadInput.files[0]; // Get the selected file
     if (file) {
       // Create a FileReader object
-      var reader = new FileReader();
+      let reader = new FileReader();
 
       // Read file data when it's loaded
       reader.onload = function (event) {
-        var fileData: any = event.target.result;
+        let fileData: any = event.target.result;
         projectService.importProject(fileData);
         handleCloseCallback();
       };
@@ -325,103 +235,104 @@ export default function OpenDialog({
       // Read the file as a data URL
       reader.readAsText(file);
     }
-  }
+  };
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value.toLowerCase());
   };
 
   return (
-    <>
-      <Modal show={show} onHide={handleCloseCallback} size="xl">
-        <Modal.Header closeButton>
-          <Modal.Title>Open project</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {/* Contenedor superior: pestañas, buscador y botón de upload */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderBottom: "1px solid #ccc",
-              paddingBottom: "10px",
-              marginBottom: "10px",
-            }}
-          >
-            {/* Pestañas */}
-            <div style={{ marginRight: "10px" }}>
-              <Tabs
-                defaultActiveKey="templateProjects"
-                activeKey={key}
-                id="controlled-tab-example"
-                onSelect={(k) => setKey(k)}
-              >
-                {!projectService.isGuessUser() && (
-                  <Tab eventKey="privateProjects" title="Personal"></Tab>
-                )}
+    <Modal show={show} onHide={handleCloseCallback} size="xl">
+      <Modal.Header closeButton>
+        <Modal.Title>Open project</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {/* Contenedor superior: pestañas, buscador y botón de upload */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderBottom: "1px solid #ccc",
+            paddingBottom: "10px",
+            marginBottom: "10px",
+          }}
+        >
+          {/* Pestañas */}
+          <div style={{ marginRight: "10px" }}>
+            <Tabs
+              defaultActiveKey="templateProjects"
+              activeKey={key}
+              id="controlled-tab-example"
+              onSelect={(k) => setKey(k)}
+            >
+              {!projectService.isGuessUser() && (
+                <Tab eventKey="privateProjects" title="Personal"></Tab>
+              )}
 
-                <Tab eventKey="sharedProjects" title="Shared With Me"></Tab>
-                
-                <Tab eventKey="templateProjects" title="Public"></Tab>
+              <Tab eventKey="sharedProjects" title="Shared With Me"></Tab>
 
-              </Tabs>
-            </div>
-  
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              style={{
-                flex: 1, 
-                padding: "8px",
-                fontSize: "14px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                marginRight: "10px",
-                backgroundColor: "#ffffff",
-              }}
-            />
-  
-            <div>
-              <a title="Upload" onClick={btnImportProject_onClick}>
-                <img
-                  src="/images/menuIcons/upload.png"
-                  alt="Upload icon"
-                  style={{
-                    width: "24px", 
-                    height: "24px",
-                    cursor: "pointer",
-                  }}
-                />
-              </a>
-            </div>
+              <Tab eventKey="templateProjects" title="Public"></Tab>
+            </Tabs>
           </div>
-  
-          {/* Contenedor de proyectos */}
-          {key === "privateProjects" ? (
-            <div className="div-container-projects">{renderProjects(owned_projects, true)}</div>
-          ) : key === "sharedProjects" ? (
-            <div className="div-container-projects">{renderProjects(sharedProjects, false)}</div>
-          ) : (
-            <div className="div-container-projects">{renderProjects(templateProjects, false)}</div>
-          )}
-            
+
           <input
-            type="file"
-            id="uploadInput"
-            onChange={uploadInput_onChange}
-            style={{ display: "none" }}
+            type="text"
+            placeholder="Search projects..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            style={{
+              flex: 1,
+              padding: "8px",
+              fontSize: "14px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              marginRight: "10px",
+              backgroundColor: "#ffffff",
+            }}
           />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseCallback}>
-            Cancel
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </>
+
+          <div>
+            <a title="Upload" onClick={btnImportProject_onClick}>
+              <img
+                src="/images/menuIcons/upload.png"
+                alt="Upload icon"
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  cursor: "pointer",
+                }}
+              />
+            </a>
+          </div>
+        </div>
+
+        {/* Contenedor de proyectos */}
+        {key === "privateProjects" ? (
+          <div className="div-container-projects">
+            {renderProjects(ownedProjects, true)}
+          </div>
+        ) : key === "sharedProjects" ? (
+          <div className="div-container-projects">
+            {renderProjects(sharedProjects, false)}
+          </div>
+        ) : (
+          <div className="div-container-projects">
+            {renderProjects(templateProjects, false)}
+          </div>
+        )}
+
+        <input
+          type="file"
+          id="uploadInput"
+          onChange={uploadInput_onChange}
+          style={{ display: "none" }}
+        />
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={handleCloseCallback}>
+          Cancel
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
-  
-  
-}  
+}

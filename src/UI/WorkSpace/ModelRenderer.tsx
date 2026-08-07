@@ -1,13 +1,12 @@
 import React, { Component } from "react";
 import { Pane, ResizablePanes } from "resizable-panes-react";
 import ProjectService from "../../Application/Project/ProjectService";
-import DiagramEditor from "../DiagramEditor/DiagramEditor";
-import ElementsPannel from "../DiagramEditor/ElementsPannel";
 import BillOfMaterialsEditor from "../Scope/BillOfMaterialsEditor";
 import TreeExplorer from "../TreeExplorer/TreeExplorer";
 import FloatingChat from "./Chatbot/FloatingChat";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
 import UvlEditor from "../UvlEditor/UvlEditor";
+import GraphEditor from "../GraphEditor";
 
 interface ModelRendererProps {
     projectService: ProjectService;
@@ -76,24 +75,7 @@ if (selectedModel.type === "Feature model UVL") {
     </td>,
   ];
 } else {
-  return [
-    <td key="diagram" style={{ padding: 0, width: "85%", verticalAlign: "top" }}>
-      <div
-        style={{
-          width: "100%",
-          height: "calc(100vh - 100px)",
-          overflow: "auto",
-          boxSizing: "border-box",
-        }}
-      >
-        <DiagramEditor projectService={this.props.projectService} />
-      </div>
-    </td>,
-
-    <td key="panel" style={{ padding: 0, width: "15%", verticalAlign: "top" }}>
-      <ElementsPannel projectService={this.props.projectService} />
-    </td>,
-  ];
+  return <GraphEditor projectService={this.props.projectService} />;
 }
 }
 

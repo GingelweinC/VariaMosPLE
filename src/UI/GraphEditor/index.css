@@ -1,0 +1,21 @@
+.graph-editor {
+  contain: content;
+  display: flex;
+  flex-direction: row;
+
+  height: 80vh;
+  width: 70vw;
+
+  border: rgb(234, 0, 255) 2px dashed;
+}
+
+.graph-container {
+  height: 100%;
+  flex: 1;
+}
+
+.full-node-handle {
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+}

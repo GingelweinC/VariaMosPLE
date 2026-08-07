@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 
 import Button from "react-bootstrap/Button";
-import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Dropdown from "react-bootstrap/Dropdown";
 import Form from "react-bootstrap/Form";
-import Row from "react-bootstrap/Row";
 import Spinner from "react-bootstrap/Spinner";
 //Prism Stuff
 import "prism-themes/themes/prism-vsc-dark-plus.css";
@@ -17,13 +15,7 @@ import Editor from "react-simple-code-editor";
 import { TabContainer, TabContent, TabPane } from "react-bootstrap";
 import ProjectService from "../../Application/Project/ProjectService";
 import { Query } from "../../Domain/ProductLineEngineering/Entities/Query";
-import {
-  hasSemantics,
-  runQuery,
-  sanitizeConcreteSemantics,
-  syncConcreteSemantics,
-  syncSemantics,
-} from "../../Domain/ProductLineEngineering/UseCases/QueryUseCases";
+import { runQuery } from "../../Domain/ProductLineEngineering/UseCases/QueryUseCases";
 import QueryBuilder from "./queryBuilder";
 import QueryResult from "./queryResult";
 
@@ -35,20 +27,17 @@ type QueryModalProps = {
 export default function QueryModal({
   handleCloseCallback,
   projectService,
-}: QueryModalProps) {
+}: Readonly<QueryModalProps>) {
   const [key, setKey] = useState("query");
   const [translatorEndpoint, setTranslatorEndpoint] = useState(
-    "https://app.variamos.com/semantic_translator"
+    "https://app.variamos.com/semantic_translator/query",
   );
   const [query, setQuery] = useState("");
   const [queryInProgress, setQueryInProgress] = useState(false);
   const [resultsReady, setResultsReady] = useState(false);
   const [results, setResults] = useState([]);
   const [semantics, setSemantics] = useState("");
-  const [solverSemantics, setSolverSemantics] = useState("\n\n\n");
-  const [selectedSolver, setSelectedSolver] = useState("swi");
-  const [semanticsInProgress, setSemanticsInProgress] = useState(false);
-  const [semanticsReady, setSemanticsReady] = useState(false);
+  const [semanticsReady] = useState(false);
   const [savedQueries, setSavedQueries] = useState({});
   const [queryName, setQueryName] = useState("");
 
@@ -70,7 +59,7 @@ export default function QueryModal({
 
   //Handle setting the value of the endpoint
   const handleSetTranslatorEndpoint = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setTranslatorEndpoint(event.target.value);
   };
@@ -84,32 +73,6 @@ export default function QueryModal({
     setResults((prevResults) => [...prevResults, results]);
   };
 
-  const handleSyncSemantics = async () => {
-    setSemanticsInProgress(true);
-    setSemanticsReady(false);
-    console.log("Syncing Semantics for the model");
-    const result = await syncSemantics(projectService, translatorEndpoint);
-    console.log("Result,", result);
-    if (result) {
-      setSemanticsReady(true);
-      setSemantics(result);
-    }
-    setSemanticsInProgress(false);
-  };
-
-  // Handle getting the concrete semantics for the model
-  const handleGetConcreteSemantics = async (lang: string) => {
-    console.log(`Getting concrete semantics for the model with lang ${lang}`);
-    const result = await syncConcreteSemantics(
-      projectService,
-      translatorEndpoint,
-      lang
-    );
-    if (result) {
-      setSolverSemantics(sanitizeConcreteSemantics(result, projectService));
-    }
-  };
-
   //Handle submiting the query
   const handleSubmitQuery = async () => {
     setQueryInProgress(true);
@@ -119,7 +82,7 @@ export default function QueryModal({
     const result = await runQuery(
       projectService,
       translatorEndpoint,
-      query_object
+      query_object,
     );
     console.log("Result", result);
     //Populate the results tab
@@ -151,14 +114,9 @@ export default function QueryModal({
       ...prevQueries,
       [queryName]: JSON.parse(query),
     }));
-    //savedQueries[queryName] = (JSON.parse(query));
-    //setSavedQueries(savedQueries);
   };
 
-  const queryResult_onVisualize = () => {
-    let i = 0;
-    handleCloseCallback();
-  };
+  const queryResult_onVisualize = handleCloseCallback;
 
   return (
     <div className="d-flex flex-column px-2">
@@ -233,17 +191,11 @@ export default function QueryModal({
           </TabPane>
           {/* New tab for constructing the query */}
           <TabPane eventKey="construct" title="Construct Query">
-            {hasSemantics(projectService) ? (
-              <QueryBuilder
-                projectService={projectService}
-                setQuery={setQuery}
-                setKey={setKey}
-              />
-            ) : (
-              <p className="my-2">
-                There are no semantics for the current language
-              </p>
-            )}
+            <QueryBuilder
+              projectService={projectService}
+              setQuery={setQuery}
+              setKey={setKey}
+            />
           </TabPane>
           {/* Tab for showing the results of the query */}
           <TabPane
@@ -284,58 +236,14 @@ export default function QueryModal({
           {/* Tab for syncing the concrete solver semantics */}
           <TabPane eventKey="solversemantics" title="Solver Specific Semantics">
             <Container
-              style={{ maxHeight: "800px", overflow: "auto" }}
+              style={{
+                minHeight: "50vh",
+                maxHeight: "800px",
+                overflow: "auto",
+              }}
               className="mt-2"
             >
-              <Row>
-                <Col className="d-flex flex-column gap-2 p-0">
-                  <Dropdown>
-                    <Dropdown.Toggle
-                      variant="primary"
-                      id="dropdown-basic"
-                      className="w-100"
-                    >
-                      Selected solver: <b>{selectedSolver}</b>
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu>
-                      <Dropdown.Item onClick={() => setSelectedSolver("swi")}>
-                        SWI
-                      </Dropdown.Item>
-                      <Dropdown.Item
-                        onClick={() => setSelectedSolver("minizinc")}
-                      >
-                        MiniZinc
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
-
-                  <Button
-                    variant="primary"
-                    onClick={() => handleGetConcreteSemantics(selectedSolver)}
-                  >
-                    Get <b>{selectedSolver}</b> Model
-                  </Button>
-                </Col>
-              </Row>
-
-              <Row>
-                <Editor
-                  value={solverSemantics}
-                  onValueChange={setSolverSemantics}
-                  highlight={(solverSemantics) => solverSemantics}
-                  padding={10}
-                  className="editor"
-                  style={{
-                    fontFamily: '"Fira code", "Fira Mono", monospace',
-                    fontSize: 18,
-                    backgroundColor: "#1e1e1e",
-                    caretColor: "gray",
-                    color: "gray",
-                    borderRadius: "10px",
-                    overflow: "auto",
-                  }}
-                />
-              </Row>
+              Section disabled, contact administrator if you were using it
             </Container>
           </TabPane>
           <TabPane eventKey="saved_queries" title="Saved Queries">
@@ -380,20 +288,6 @@ export default function QueryModal({
             Clear Query Results
           </Button>
         )}
-        {key !== "results" && (
-          <Button variant="primary" onClick={handleSyncSemantics}>
-            {semanticsInProgress && (
-              <Spinner
-                as="span"
-                animation="border"
-                size="sm"
-                role="status"
-                aria-hidden="true"
-              />
-            )}
-            Sync CLIF Semantics
-          </Button>
-        )}
         <Button variant="primary" onClick={handleResetModelConfig}>
           Reset model configuration state
         </Button>
@@ -401,186 +295,3 @@ export default function QueryModal({
     </div>
   );
 }
-
-// <Accordion defaultActiveKey="query" flush>
-//         <Accordion.Item eventKey="query">
-//           <Accordion.Header>Queries</Accordion.Header>
-//           <Accordion.Body>
-//             <Form>
-//               <Form.Group className="mb-3" controlId="translatorEndpoint">
-//                 <Form.Label>Translator Endpoint</Form.Label>
-//                 <Form.Control
-//                   type="text"
-//                   placeholder="Enter endpoint"
-//                   value={translatorEndpoint}
-//                   onChange={handleSetTranslatorEndpoint}
-//                 />
-//                 <Form.Text className="text-muted">
-//                   Enter the adress of the endpoint to use for the queries.
-//                 </Form.Text>
-//               </Form.Group>
-//               <Form.Group
-//                 className="d-flex flex-column gap-2"
-//                 controlId="query"
-//               >
-//                 <Form.Label className="m-0">Query</Form.Label>
-//                 <Form.Control
-//                   as="textarea"
-//                   rows={5}
-//                   value={query}
-//                   onChange={handleSetQuery}
-//                 />
-//                 {/* Save the query with a text field */}
-//                 <Form.Control
-//                   type="text"
-//                   placeholder="Enter Query Name"
-//                   value={queryName}
-//                   onChange={(e) => setQueryName(e.target.value)}
-//                 />
-//                 <Button variant="primary" onClick={handleSaveQuery}>
-//                   Save Query
-//                 </Button>
-//               </Form.Group>
-//             </Form>
-//           </Accordion.Body>
-//         </Accordion.Item>
-
-//         <Accordion.Item eventKey="construct">
-//           <Accordion.Header>Construct Query</Accordion.Header>
-//           <Accordion.Body>
-//             {hasSemantics(projectService) ? (
-//               <QueryBuilder
-//                 projectService={projectService}
-//                 setQuery={setQuery}
-//                 setKey={setKey}
-//               />
-//             ) : (
-//               <p className="my-2">
-//                 There are no semantics for the current language
-//               </p>
-//             )}
-//           </Accordion.Body>
-//         </Accordion.Item>
-
-//         <Accordion.Item eventKey="results">
-//           <Accordion.Header>Results</Accordion.Header>
-//           <Accordion.Body>
-//             {results.map((result, index) => (
-//               <QueryResult
-//                 key={index}
-//                 index={index}
-//                 result={result}
-//                 projectService={projectService}
-//                 onVisualize={queryResult_onVisualize}
-//               />
-//             ))}
-//           </Accordion.Body>
-//         </Accordion.Item>
-
-//         <Accordion.Item eventKey="semantics">
-//           <Accordion.Header>CLIF Semantics</Accordion.Header>
-//           <Accordion.Body>
-//             <Container style={{ maxHeight: "800px", overflow: "auto" }}>
-//               <Editor
-//                 value={semantics}
-//                 onValueChange={setSemantics}
-//                 highlight={(semantics) =>
-//                   highlight(semantics, languages.lisp, "lisp")
-//                 }
-//                 padding={10}
-//                 className="editor"
-//                 style={{
-//                   fontFamily: '"Fira code", "Fira Mono", monospace',
-//                   fontSize: 18,
-//                   backgroundColor: "#1e1e1e",
-//                   caretColor: "gray",
-//                   color: "gray",
-//                   borderRadius: "10px",
-//                   overflow: "auto",
-//                 }}
-//               />
-//             </Container>
-//           </Accordion.Body>
-//         </Accordion.Item>
-
-//         <Accordion.Item eventKey="solversemantics">
-//           <Accordion.Header>Solver Specific Semantics</Accordion.Header>
-//           <Accordion.Body>
-//             <Container
-//               style={{ maxHeight: "800px", overflow: "auto" }}
-//               className="mt-2"
-//             >
-//               <Row>
-//                 <Col className="d-flex flex-column gap-2 p-0">
-//                   <Dropdown>
-//                     <Dropdown.Toggle
-//                       variant="primary"
-//                       id="dropdown-basic"
-//                       className="w-100"
-//                     >
-//                       Selected solver: <b>{selectedSolver}</b>
-//                     </Dropdown.Toggle>
-//                     <Dropdown.Menu>
-//                       <Dropdown.Item onClick={() => setSelectedSolver("swi")}>
-//                         SWI
-//                       </Dropdown.Item>
-//                       <Dropdown.Item
-//                         onClick={() => setSelectedSolver("minizinc")}
-//                       >
-//                         MiniZinc
-//                       </Dropdown.Item>
-//                     </Dropdown.Menu>
-//                   </Dropdown>
-
-//                   <Button
-//                     variant="primary"
-//                     onClick={() => handleGetConcreteSemantics(selectedSolver)}
-//                   >
-//                     Get <b>{selectedSolver}</b> Model
-//                   </Button>
-//                 </Col>
-//               </Row>
-
-//               <Row>
-//                 <Editor
-//                   value={solverSemantics}
-//                   onValueChange={setSolverSemantics}
-//                   highlight={(solverSemantics) => solverSemantics}
-//                   padding={10}
-//                   className="editor"
-//                   style={{
-//                     fontFamily: '"Fira code", "Fira Mono", monospace',
-//                     fontSize: 18,
-//                     backgroundColor: "#1e1e1e",
-//                     caretColor: "gray",
-//                     color: "gray",
-//                     borderRadius: "10px",
-//                     overflow: "auto",
-//                   }}
-//                 />
-//               </Row>
-//             </Container>
-//           </Accordion.Body>
-//         </Accordion.Item>
-
-//         <Accordion.Item eventKey="saved_queries">
-//           <Accordion.Header>Saved Queries</Accordion.Header>
-//           <Accordion.Body>
-//             {(Object.getOwnPropertyNames(savedQueries).length > 0 &&
-//               Object.entries(savedQueries).map(([name, query], index) => (
-//                 <div key={index}>
-//                   <Button
-//                     variant="primary"
-//                     onClick={() => setQuery(JSON.stringify(query))}
-//                   >
-//                     {name}
-//                   </Button>
-//                 </div>
-//               ))) || (
-//               <div>
-//                 <p>No saved queries</p>
-//               </div>
-//             )}
-//           </Accordion.Body>
-//         </Accordion.Item>
-//       </Accordion>

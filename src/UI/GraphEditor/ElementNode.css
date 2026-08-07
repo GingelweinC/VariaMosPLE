@@ -1,0 +1,9 @@
+.element-node {
+  text-align: center;
+  overflow: hidden;
+}
+
+.element-node-title {
+  font-weight: bold;
+  text-overflow: ellipsis;
+}
