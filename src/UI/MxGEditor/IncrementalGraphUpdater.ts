@@ -157,7 +157,7 @@ export class IncrementalGraphUpdater {
     elements: Element[],
     callbacks?: any
   ): void {
-    const languageDefinition = this.projectService.getLanguageDefinition(model.type);
+    const languageDefinition = this.projectService.getLanguageDefinition();
     if (!languageDefinition) return;
 
     elements.forEach(element => {

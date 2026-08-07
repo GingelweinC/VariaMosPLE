@@ -7,7 +7,7 @@ import {Relationship} from "../Entities/Relationship";
 import {Model} from "../Entities/Model";
 import RestrictionService from "../../../DataProvider/Services/restrictionService";
 
-
+//These tests were called with non existent languages, they need to be called with languages respecting the conditions.
 afterEach(() => {
   jest.clearAllMocks();
 });
@@ -15,17 +15,13 @@ afterEach(() => {
 describe('all methods should work', ()=>{
   test('Getting restriction should return the right values', () => {
     // @ts-ignore
-    jest.spyOn(LanguageUseCases.prototype, "getLanguagesDetail").mockImplementation(() => mockReturnedValue);
+    jest.spyOn(LanguageUseCases.prototype, "getLanguageById").mockImplementation(() => mockReturnedValue);
     let restrictionsUseCases = new RestrictionsUseCases();
     let languageUseCases = new LanguageUseCases();
     // @ts-ignore
-    let languages: any = languageUseCases.getLanguagesDetail().data;
-    let languageByName: Language = languageUseCases.getLanguageByName(
-        'istar2',
-        languages
-    );
+    let languageById : Language = await languageUseCases.getLanguageById('103');
 
-    let restrictions = restrictionsUseCases.getRestrictions(languageByName);
+    let restrictions = restrictionsUseCases.getRestrictions(languageById);
 
     expect(restrictions.quantity_element[0].min).toBe(3)
     expect(restrictions.quantity_element[0].max).toBe(2)
@@ -39,22 +35,18 @@ describe('all methods should work', ()=>{
     //ARRANGE
     //Mocks
     // @ts-ignore
-    jest.spyOn(LanguageUseCases.prototype, "getLanguagesDetail").mockImplementation(() => mockReturnedValue);
+    jest.spyOn(LanguageUseCases.prototype, "getLanguageById").mockImplementation(() => mockReturnedValue);
     const logSpy = jest.spyOn(console, 'log')
     //Variables
     let restrictionsUseCases = new RestrictionsUseCases();
     let languageUseCases = new LanguageUseCases();
     // @ts-ignore
-    let languages: any = languageUseCases.getLanguagesDetail().data;
+    let languageById: Language = await languageUseCases.getLanguageById('103');
     let element: Element[]=[]
     let relationShip: Relationship[] = [] 
     let model = new Model('Model Id','Model Name','Type','LanguageId','Description','Author','Source',element, relationShip, "Type Engineering")
 
-    let languageByName: Language = languageUseCases.getLanguageByName(
-        'istar3',
-        languages
-    );
-    let restrictions = await restrictionsUseCases.getRestrictions(languageByName);
+    let restrictions = await restrictionsUseCases.getRestrictions(languageById);
 
     //ACT
     restrictionsUseCases.applyRestrictions(()=>{console.log('check');}, model, restrictions )
@@ -71,22 +63,18 @@ describe('all methods should work', ()=>{
     //ARRANGE
     //Mocks
     // @ts-ignore
-    jest.spyOn(LanguageUseCases.prototype, "getLanguagesDetail").mockImplementation(() => mockReturnedValue);
+    jest.spyOn(LanguageUseCases.prototype, "getLanguageById").mockImplementation(() => mockReturnedValue);
     const logSpy = jest.spyOn(console, 'log')
     const applyRestrictionMock = jest.spyOn(RestrictionService.prototype, "applyRestriction");
     //Variables
     let restrictionsUseCases = new RestrictionsUseCases();
     let languageUseCases = new LanguageUseCases();
     // @ts-ignore
-    let languages: any = languageUseCases.getLanguagesDetail().data;
     let element: Element[]=[]
     let relationShip: Relationship[] = [] 
     let model = new Model('Model Id','Model Name','Type','LanguageType','Description','Author','Source',element, relationShip, "Type Engineering")
-    let languageByName: Language = languageUseCases.getLanguageByName(
-        'istar2',
-        languages
-    );
-    let restrictions = await restrictionsUseCases.getRestrictions(languageByName);
+    let languageById: Language = await languageUseCases.getLanguageById('103');
+    let restrictions = await restrictionsUseCases.getRestrictions(languageById);
 
     //
     // //ACT

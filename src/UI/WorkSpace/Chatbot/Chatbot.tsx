@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./Chatbot.css";
 import ProjectService from "../../../Application/Project/ProjectService";
-import { Language as DomainLanguage } from "../../../Domain/ProductLineEngineering/Entities/Language";
+import { Language as DomainLanguage, FullLanguage } from "../../../Domain/ProductLineEngineering/Entities/Language";
 import { AIChatRequest, AIChatResult } from "../../../DataProvider/Services/projectPersistenceService";
 import { VariamosAIService } from "../../../DataProvider/Services/projectPersistenceService";
 import { getOrganicRAG } from "./OrganicRAGService";
@@ -68,7 +68,7 @@ type PlanLLM = { name: string; elements: PlanElement[]; relationships: PlanRelat
 
 type ModelOption = { id: string; label: string; free?: boolean };
 
-const getLanguageKey = (l: Language) => String(l.id ?? l.name);
+const getLanguageKey = (l: Language) => String(l.uuid ?? l.name);
 
 const resolveLanguageForModel = (all: Language[], model: any): Language | null => {
   const mt = String(model?.type ?? "").trim();
@@ -76,7 +76,7 @@ const resolveLanguageForModel = (all: Language[], model: any): Language | null =
 
   return (
     all.find(l => String(getLanguageKey(l)) === mt) ||
-    all.find(l => String(l.id ?? "") === mt) ||
+    all.find(l => String(l.uuid ?? "") === mt) ||
     all.find(l => String(l.name ?? "") === mt) ||
     null
   );
@@ -268,7 +268,7 @@ const renderProjectMemory = (plk?: PLKnowledge, lang?: Language) => {
     return (
       tt === String(langKey) ||
       tt === String(lang?.name) ||
-      tt === String(lang?.id)
+      tt === String(lang?.uuid)
     );
   };
 
@@ -356,7 +356,7 @@ const harvestProductLineKnowledge = (ps: any, currentLanguage?: Language, maxIte
       const t = String(mm?.type || "");
       return (
         !!langKey &&
-        (t === String(langKey) || t === String(currentLanguage?.name) || t === String(currentLanguage?.id))
+        (t === String(langKey) || t === String(currentLanguage?.name) || t === String(currentLanguage?.uuid))
       );
     };
 
@@ -1221,9 +1221,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ projectService }) => {
 
   /** 3) Cargar abstractSyntax (string u objeto) */
   /** 3) Cargar abstractSyntax (string u objeto) — ahora con override opcional de lenguaje */
-  const getAbstract = (languageOverride?: Language): AbstractSyntax => {
+  const getAbstract = (languageOverride: FullLanguage): AbstractSyntax => {
     try {
-      const lang = languageOverride || currentLanguage;
+      const lang = languageOverride;
       const rawFromLang = lang?.abstractSyntax ?? null;
       let abs = parseMaybeJson(rawFromLang);
 
@@ -2324,7 +2324,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ projectService }) => {
   const injectIntoProject = (gp: PlanLLM, lang: Language, ph: Phase, abs: AbstractSyntax) => {
     try {
       const langName = lang.name;
-      const langIdStr = String(lang.id ?? lang.name);
+      const langIdStr = String(lang.uuid ?? lang.name);
       const createByPhase: Record<Phase, () => any> = {
         SCOPE: () => ps.createScopeModel(ps.project, langName, langIdStr, gp.name, "", "", ""),
         DOMAIN: () => ps.createDomainEngineeringModel(ps.project, langName, langIdStr, gp.name, "", "", ""),
@@ -2616,7 +2616,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ projectService }) => {
           if (!targetModel) throw new Error("No hay modelo seleccionado para aplicar el PATCH.");
 
           const langForModel = getLanguageForSelectedModel(targetModel) || currentLanguage;
-          const abs = getAbstract(langForModel);
+          const fullLanguage = ps.getFullLanguageById(langForModel.uuid);
+          const abs = getAbstract(fullLanguage);
           if (!Object.keys(abs.elements || {}).length) throw new Error("abstractSyntax vacío");
 
           setAssistantText("Recibí un PATCH JSON. Ejecutándolo sin LLM…");
@@ -2686,7 +2687,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ projectService }) => {
         // ---------- PLAN directo ----------
         if (looksLikePlan(userObj)) {
           const plan0 = userObj.nodes || userObj.edges ? nodesEdgesToPlan(userObj) : userObj;
-          const abs = getAbstract(currentLanguage);
+          const fullLanguage = ps.getFullLanguageById(currentLanguage.uuid);
+          const abs = getAbstract(fullLanguage);
           if (!Object.keys(abs.elements || {}).length) throw new Error("abstractSyntax vacío");
 
           setAssistantText("Recibí un PLAN JSON. Creando modelo sin LLM…");
@@ -2730,7 +2732,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ projectService }) => {
           ? (getLanguageForSelectedModel(targetModel) || currentLanguage)
           : currentLanguage;
 
-      const abs = getAbstract(opLanguage);
+      const fullLanguage = ps.getFullLanguageById(opLanguage.uuid);
+      const abs = getAbstract(fullLanguage);
       if (!Object.keys(abs.elements || {}).length) throw new Error("abstractSyntax vacío");
 
       // memoria (por lenguaje de operación)
