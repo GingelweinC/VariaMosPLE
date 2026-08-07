@@ -1,7 +1,7 @@
 import ExternalFuntionService from "../../../DataProvider/Services/externalFunctionService";
 import LanguageService from "../../../DataProvider/Services/languageService";
 import { ExternalFuntion } from "../Entities/ExternalFuntion";
-import { Language } from "../Entities/Language";
+import { FullLanguage, Language } from "../Entities/Language";
 
 export default class LanguageUseCases {
   private languageService: LanguageService = new LanguageService();
@@ -15,17 +15,35 @@ export default class LanguageUseCases {
     return languagesFilter;
   }
 
-  async getLanguagesByUser(user: string): Promise<Language[]> {
-    return await this.languageService.getLanguagesByUser(user);
+  async getLanguagesByUser(): Promise<Language[]> {
+    return await this.languageService.getLanguagesByUser();
   }
 
-  getLanguagesDetail(): Language[] {
-    return this.languageService.getLanguagesDetail();
+  async getLanguageById(languageId: string): Promise<Language> {
+    return await this.languageService.getLanguageById(languageId);
   }
 
-  getLanguagesDetailCll(callBack: any) {
-    return this.languageService.getLanguages(callBack);
-  }
+  async getFullLanguageById(languageId: string): Promise<FullLanguage> {
+    console.log("getFullLanguageById languageId:", languageId);
+    const [
+        language,
+        elements,
+        reifications,
+        relations,
+    ] = await Promise.all([
+        this.languageService.getLanguageById(languageId),
+        this.languageService.getElementsByLanguageId(languageId),
+        this.languageService.getReificationsByLanguageId(languageId),
+        this.languageService.getRelationsByLanguageId(languageId),
+    ]);
+
+    return {
+        ...language,
+        Elements: elements,
+        Reifications: reifications,
+        Relationships: relations,
+    };
+}
 
   callExternalFuntion(callback: any, externalFunction: ExternalFuntion): any[] {
     return this.externalFunctionService.callExternalFuntion(
@@ -34,7 +52,7 @@ export default class LanguageUseCases {
     );
   }
 
-  getExternalFunctions(callback: any, languageId: number) {
+  getExternalFunctions(callback: any, languageId: string) {
     return this.externalFunctionService.getExternalFunctions(
       callback,
       languageId
