@@ -6,7 +6,7 @@ import { Config } from "../../Config";
 export default class ExternalFuntionService {
   apiVariamos: any;
 
-  getExternalFunctions(callback: any, languageId: number) {
+  getExternalFunctions(callback: any, languageId: string) {
     let me = this; 
     this.apiVariamos = axios.create({
       baseURL: Config.SERVICES.urlBackEndLanguage,

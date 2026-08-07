@@ -1247,21 +1247,21 @@ class TreeMenu extends Component<Props, State> {
     let language: Language = me.state.newModelLanguage;
     const add: any = {
       SCOPE: function () {
-        me.addNewScopeModel(language.name, "" + language.id, name, description, author, source);
+        me.addNewScopeModel(language.name, "" + language.uuid, name, description, author, source);
       },
       DOMAIN: function () {
-        me.addNewDomainEModel(language.name, "" + language.id, name, description, author, source);
+        me.addNewDomainEModel(language.name, "" + language.uuid, name, description, author, source);
       },
       APPLICATION: function () {
         if (me.props.projectService.getTreeItemSelected() === "applicationEngineering") {
-          me.addNewApplicationEModel(language.name, "" + language.id, name, description, author, source);
+          me.addNewApplicationEModel(language.name, "" + language.uuid, name, description, author, source);
         }
         else {
-          me.addNewApplicationModel(language.name, "" + language.id, name, description, author, source);
+          me.addNewApplicationModel(language.name, "" + language.uuid, name, description, author, source);
         }
       },
       ADAPTATION: function () {
-        me.addNewAdaptationModel(language.name, "" + language.id, name, description, author, source);
+        me.addNewAdaptationModel(language.name, "" + language.uuid, name, description, author, source);
       },
     };
 
