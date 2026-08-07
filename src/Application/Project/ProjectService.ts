@@ -8,7 +8,7 @@ import { Application } from "../../Domain/ProductLineEngineering/Entities/Applic
 import { ConfigurationInformation } from "../../Domain/ProductLineEngineering/Entities/ConfigurationInformation";
 import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
 import { ExternalFuntion } from "../../Domain/ProductLineEngineering/Entities/ExternalFuntion";
-import { Language } from "../../Domain/ProductLineEngineering/Entities/Language";
+import { Language, FullLanguage } from "../../Domain/ProductLineEngineering/Entities/Language";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
 import { Point } from "../../Domain/ProductLineEngineering/Entities/Point";
 import { ProductLine } from "../../Domain/ProductLineEngineering/Entities/ProductLine";
@@ -58,7 +58,7 @@ export default class ProjectService {
   //We will need a parameter query when we need it
   // more and more it's clear we need redux or something like it
   // to manage the state of the application
-  private _currentLanguage: Language = null;
+  private _currentLanguage: FullLanguage = null;
   private _currentModel: Model = null;
 
   private _environment: string = Config.NODE_ENV;
@@ -101,7 +101,7 @@ export default class ProjectService {
     return this._currentModel;
   }
 
-  public get currentLanguage(): Language {
+  public get currentLanguage(): FullLanguage {
     return this._currentLanguage;
   }
 
@@ -224,23 +224,13 @@ export default class ProjectService {
     me.languageUseCases.callExternalFuntion(callback, externalFunction);
   }
 
-  loadExternalFunctions(languageName: string) {
+  loadExternalFunctions() {
     let me = this;
-    let language = this._languages.filter(
-      (language) => language.name === languageName
-    );
     let callback = function (data: any) {
       me._externalFunctions = data;
     };
-    if (language) {
-      if (language.length > 0) {
-        this.languageUseCases.getExternalFunctions(callback, language[0].id);
-        // HACK: FIXME: This is a dirty hack...
-        // We will se the current language to be the first one
-        // so that we can get it instead of passing through a million different
-        // functions
-        this._currentLanguage = language[0];
-      }
+    if (this.currentLanguage) {
+      this.languageUseCases.getExternalFunctions(callback, this.currentLanguage.uuid);
     }
   }
 
@@ -253,6 +243,7 @@ export default class ProjectService {
     }
     return 0;
   }
+
   getSelectedScope() {
     const selectedId = this.treeIdItemSelected;
     console.log("Selected ID:", selectedId);
@@ -299,66 +290,46 @@ export default class ProjectService {
     return { elements: structure, relationships };
   }
 
-  modelScopeSelected(idPl: number, idScopeModel: number) {
-    let modelSelected =
-      this._project.productLines[idPl].scope?.models[idScopeModel];
+  private selectModel(model: Model) {
     this.treeItemSelected = "model";
-    this.treeIdItemSelected = modelSelected.id;
-    this.loadExternalFunctions(modelSelected.type);
-    this.raiseEventSelectedModel(modelSelected);
+    this.treeIdItemSelected = model.id;
+    this.raiseEventSelectedModel(model);
+    this.loadExternalFunctions();
     this.raiseEventUpdateSelected(this.treeItemSelected);
+  }
+
+  modelScopeSelected(idPl: number, idScopeModel: number) {
+    const model = this._project.productLines[idPl].scope?.models[idScopeModel];
+    if (model) {
+      this.selectModel(model);
+    }
   }
 
   modelDomainSelected(idPl: number, idDomainModel: number) {
-    let modelSelected =
-      this._project.productLines[idPl].domainEngineering?.models[idDomainModel];
-
-    this.treeItemSelected = "model";
-    this.treeIdItemSelected = modelSelected.id;
-
-    this.loadExternalFunctions(modelSelected.type);
-
-    this.raiseEventSelectedModel(modelSelected);
-    this.raiseEventUpdateSelected(this.treeItemSelected);
+    const model = this._project.productLines[idPl].domainEngineering?.models[idDomainModel];
+    if (model) {
+      this.selectModel(model);
+    }
   }
 
-  modelApplicationSelected(
-    idPl: number,
-    idApplication: number,
-    idApplicationModel: number
-  ) {
-    let modelSelected =
-      this._project.productLines[idPl].applicationEngineering?.applications[
-        idApplication
-      ].models[idApplicationModel];
-    this.treeItemSelected = "model";
-    this.treeIdItemSelected = modelSelected.id;
-
-    this.loadExternalFunctions(modelSelected.type);
-
-    this.raiseEventSelectedModel(modelSelected);
-    this.raiseEventUpdateSelected(this.treeItemSelected);
+  modelApplicationSelected(idPl: number, idApplication: number, idApplicationModel: number) {
+    const model = this._project.productLines[idPl].applicationEngineering?.applications[idApplication].models[idApplicationModel];
+    if (model) {
+      this.selectModel(model);
+    }
   }
 
-  modelAdaptationSelected(
-    idPl: number,
-    idApplication: number,
-    idAdaptation: number,
-    idAdaptationModel: number
-  ) {
-    let modelSelected =
-      this._project.productLines[idPl].applicationEngineering?.applications[
-        idApplication
-      ].adaptations[idAdaptation].models[idAdaptationModel];
+  modelAdaptationSelected(idPl: number,idApplication: number, idAdaptation: number, idAdaptationModel: number) {
+    const model = this._project.productLines[idPl]
+        .applicationEngineering?.applications[idApplication]
+        .adaptations[idAdaptation]
+        .models[idAdaptationModel];
 
-    this.treeItemSelected = "model";
-    this.treeIdItemSelected = modelSelected.id;
-
-    this.loadExternalFunctions(modelSelected.type);
-
-    this.raiseEventSelectedModel(modelSelected);
-    this.raiseEventUpdateSelected(this.treeItemSelected);
+    if (model) {
+      this.selectModel(model);
+    }
   }
+
 
   addSelectedModelListener(listener: any) {
     this.selectedModelListeners.push(listener);
@@ -368,10 +339,11 @@ export default class ProjectService {
     this.selectedModelListeners[listener] = null;
   }
 
-  raiseEventSelectedModel(model: Model | undefined) {
+  async raiseEventSelectedModel(model: Model | undefined) {
     if (model) {
       let me = this;
       me._currentModel = model;
+      me._currentLanguage = await this.languageUseCases.getFullLanguageById(model.languageId);
       let e = new SelectedModelEventArg(me, model);
       for (let index = 0; index < me.selectedModelListeners.length; index++) {
         let callback = this.selectedModelListeners[index];
@@ -562,12 +534,7 @@ export default class ProjectService {
   }
 
   async getLanguagesByUser(): Promise<Language[]> {
-    const user = this.getUser();
-    return this.languageUseCases.getLanguagesByUser(user);
-  }
-
-  getLanguagesDetail(): Language[] {
-    return this.languageUseCases.getLanguagesDetail();
+    return this.languageUseCases.getLanguagesByUser();
   }
 
   applyRestrictions(callback: any, model: Model) {
@@ -580,10 +547,6 @@ export default class ProjectService {
       this.restrictionsUseCases.getRestrictions(languageByName);
 
     this.restrictionsUseCases.applyRestrictions(callback, model, restrictions);
-  }
-
-  getLanguagesDetailCll(callback: any) {
-    return this.languageUseCases.getLanguagesDetailCll(callback);
   }
 
   existDomainModel(language: string): boolean {
@@ -1307,14 +1270,8 @@ export default class ProjectService {
     }
   }
 
-  getLanguageDefinition(language: string) {
-    if (this.languages) {
-      for (let index = 0; index < this.languages.length; index++) {
-        if (this.languages[index].name === language) {
-          return this.languages[index];
-        }
-      }
-    }
+  getLanguageDefinition() {
+    return this.currentLanguage
   }
 
   createRelationship(
@@ -1662,40 +1619,43 @@ export default class ProjectService {
       }
     })
   }
+  
   async getCatalogData(): Promise<Array<{ Property: string; Value: string }>> {
-    try {
-      const currentLanguage = this.currentLanguage;
-      if (!currentLanguage) {
-        throw new Error("No modeling language selected");
-      }
+  //   try {
+  //     const currentLanguage = this.currentLanguage;
+  //     if (!currentLanguage) {
+  //       throw new Error("No modeling language selected");
+  //     }
 
-      // Parsear el abstractSyntax del lenguaje actual
-      const abstractSyntax = JSON.parse(currentLanguage.abstractSyntax);
+  //     // Parsear el abstractSyntax del lenguaje actual
+  //     const abstractSyntax = JSON.parse(currentLanguage.abstractSyntax);
 
-      // Verificar que existen elementos en la sintaxis abstracta
-      if (!abstractSyntax || !abstractSyntax.elements) {
-        throw new Error("Invalid abstract syntax structure for the selected language");
-      }
+  //     // Verificar que existen elementos en la sintaxis abstracta
+  //     if (!abstractSyntax || !abstractSyntax.elements) {
+  //       throw new Error("Invalid abstract syntax structure for the selected language");
+  //     }
 
-      // Extraer propiedades de cada elemento
-      const catalogData: Array<{ Property: string; Value: string }> = [];
-      for (const elementName in abstractSyntax.elements) {
-        const element = abstractSyntax.elements[elementName];
-        if (element.properties && Array.isArray(element.properties)) {
-          for (const property of element.properties) {
-            catalogData.push({
-              Property: `${elementName} - ${property.name}`,
-              Value: property.possibleValues || "N/A",
-            });
-          }
-        }
-      }
+  //     // Extraer propiedades de cada elemento
+  //     const catalogData: Array<{ Property: string; Value: string }> = [];
+  //     for (const elementName in abstractSyntax.elements) {
+  //       const element = abstractSyntax.elements[elementName];
+  //       if (element.properties && Array.isArray(element.properties)) {
+  //         for (const property of element.properties) {
+  //           catalogData.push({
+  //             Property: `${elementName} - ${property.name}`,
+  //             Value: property.possibleValues || "N/A",
+  //           });
+  //         }
+  //       }
+  //     }
 
-      return catalogData;
-    } catch (error) {
-      console.error("Error retrieving catalog data:", error);
-      return [];
-    }
+  //     return catalogData;
+  //   } catch (error) {
+  //     console.error("Error retrieving catalog data:", error);
+  //     return [];
+  //   }
+  // }
+    return 
   }
 
 
