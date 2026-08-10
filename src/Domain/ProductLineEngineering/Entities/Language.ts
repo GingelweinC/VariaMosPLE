@@ -34,6 +34,8 @@ export type FullLanguage = Language & {
   Elements: any[];
   Reifications: any[]
   Relationships: any[];
+  abstractSyntax?: any;
+  semantics?: any;
 }
 
 
