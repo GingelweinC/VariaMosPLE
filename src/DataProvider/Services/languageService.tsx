@@ -1,5 +1,6 @@
 import { Language } from "../../Domain/ProductLineEngineering/Entities/Language";
 import { LANGUAGES_CLIENT } from "../../Infraestructure/AxiosConfig";
+import { LanguagesFilter } from "../../Domain/ProductLineEngineering/Entities/LanguagesFilter";
 
 export default class LanguageService { 
 
@@ -49,7 +50,9 @@ export default class LanguageService {
 
   async getLanguagesByUser(): Promise<Language[]> {
     try {
-      const res = await LANGUAGES_CLIENT.get("/");
+      const filter= new LanguagesFilter();
+      filter.status = ["draft", "pending", "published"];
+      const res = await LANGUAGES_CLIENT.get("/", { params: filter });
       const languages: Language[] = res.data;
 
       return languages;
