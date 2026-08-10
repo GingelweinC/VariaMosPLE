@@ -549,52 +549,6 @@ export default class ProjectService {
     this.restrictionsUseCases.applyRestrictions(callback, model, restrictions);
   }
 
-  existDomainModel(language: string): boolean {
-    let existModel = this._project.productLines[
-      this.productLineSelected
-    ].domainEngineering.models.filter((model) => model.type === language)[0];
-
-    if (existModel) return true;
-
-    return false;
-  }
-
-  existApplicaioninEngModel(language: string): boolean {
-    let existModel = this._project.productLines[
-      this.productLineSelected
-    ].applicationEngineering.models.filter(
-      (model) => model.type === language
-    )[0];
-
-    if (existModel) return true;
-
-    return false;
-  }
-
-  existApplicaioninModel(language: string): boolean {
-    let existModel = this._project.productLines[
-      this.productLineSelected
-    ].applicationEngineering.applications[
-      this.applicationSelected
-    ].models.filter((model) => model.type === language)[0];
-
-    if (existModel) return true;
-
-    return false;
-  }
-
-  existAdaptationModel(language: string): boolean {
-    let existModel = this._project.productLines[
-      this.productLineSelected
-    ].applicationEngineering.applications[this.applicationSelected].adaptations[
-      this.adaptationSelected
-    ].models.filter((model) => model.type === language)[0];
-
-    if (existModel) return true;
-
-    return false;
-  }
-
   public get project(): Project {
     return this._project;
   }
@@ -1270,10 +1224,6 @@ export default class ProjectService {
     }
   }
 
-  getLanguageDefinition() {
-    return this.currentLanguage
-  }
-
   createRelationship(
     model: Model,
     name: string,
@@ -1501,44 +1451,6 @@ export default class ProjectService {
     this.raiseEventUpdateProject(this._project, model.id);
   }
 
-  async solveConsistencyAttributeModel(applicationModel: Model) {
-    const domainModel = this.findModelById(this.project, applicationModel.sourceModelIds[0]);
-    const domainModelElementsBackup = JSON.stringify(domainModel.elements);
-    const getAppFeaturesId = applicationModel.elements.map(element => element.name)
-    domainModel.elements.forEach((domElement) => {
-      if (domElement.type === "ConcreteFeature" || domElement.type === "RootFeature") {
-        if (getAppFeaturesId.includes(domElement.name)) {
-          domElement.properties[0].value = "Selected";
-        } else {
-          domElement.properties[0].value = "Unselected";
-        }
-      }
-    })
-    const query_object = new Query({
-      solver: "swi",
-      operation: "sat"
-    });
-    const result = await runQueryFromModel(
-      this,
-      "https://app.variamos.com/semantic_translator",
-      query_object,
-      applicationModel.sourceModelIds[0]
-    );
-    domainModel.elements = JSON.parse(domainModelElementsBackup);
-    console.log(result);
-    applicationModel.inconsistent = !result;
-    if (result) {
-      alertify.success(`${applicationModel.name} is consistent with the domain model.`, 0);
-      applicationModel.consistencyError = null;
-    } else {
-      const errorMessage = `${applicationModel.name} is not consistent with the domain model.`;
-      applicationModel.consistencyError = errorMessage;
-      alertify.error(errorMessage, 0);
-
-    }
-    this.raiseEventUpdateProject(this._project, applicationModel.id);
-  }
-
   async solveConsistency(appModel: Model) {
     const domainModel = this.project.productLines[0].domainEngineering.models[0];
     const domainElementsBackup = JSON.stringify(domainModel.elements);
@@ -1619,46 +1531,6 @@ export default class ProjectService {
       }
     })
   }
-  
-  async getCatalogData(): Promise<Array<{ Property: string; Value: string }>> {
-  //   try {
-  //     const currentLanguage = this.currentLanguage;
-  //     if (!currentLanguage) {
-  //       throw new Error("No modeling language selected");
-  //     }
-
-  //     // Parsear el abstractSyntax del lenguaje actual
-  //     const abstractSyntax = JSON.parse(currentLanguage.abstractSyntax);
-
-  //     // Verificar que existen elementos en la sintaxis abstracta
-  //     if (!abstractSyntax || !abstractSyntax.elements) {
-  //       throw new Error("Invalid abstract syntax structure for the selected language");
-  //     }
-
-  //     // Extraer propiedades de cada elemento
-  //     const catalogData: Array<{ Property: string; Value: string }> = [];
-  //     for (const elementName in abstractSyntax.elements) {
-  //       const element = abstractSyntax.elements[elementName];
-  //       if (element.properties && Array.isArray(element.properties)) {
-  //         for (const property of element.properties) {
-  //           catalogData.push({
-  //             Property: `${elementName} - ${property.name}`,
-  //             Value: property.possibleValues || "N/A",
-  //           });
-  //         }
-  //       }
-  //     }
-
-  //     return catalogData;
-  //   } catch (error) {
-  //     console.error("Error retrieving catalog data:", error);
-  //     return [];
-  //   }
-  // }
-    return 
-  }
-
-
 
   checkConsistency(model: Model) {
     this.resetConfiguration(model);
@@ -1701,9 +1573,7 @@ export default class ProjectService {
       alert(configs)
       console.error("Failed to copy text: ", error);
     }
-
   }
-
 
   copyModelConfiguration(model: Model) {
     console.log(model);
@@ -1713,6 +1583,7 @@ export default class ProjectService {
       this.copyDomainConfiguration(model);
     }
   }
+
   async drawCoreFeatureTree() {
     const query_object = new Query({
       "solver": "minizinc",
@@ -1784,8 +1655,6 @@ export default class ProjectService {
 
   getProjectProvider(projectId: string): any {
     return getProjectProvider(projectId);
-
-
   }
 
   createHistoryEvent(historyEvent: ProjectHistory): Promise<any> {
