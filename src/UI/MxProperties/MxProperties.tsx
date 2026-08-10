@@ -545,7 +545,7 @@ export default class MxProperties extends Component<Props, State> {
     if (this.currentObject) {
       let concreteSyntaxElement: any = null;
       let languageDefinition: any =
-        this.props.projectService.getLanguageDefinition();
+        this.props.projectService.currentLanguage;
       if (languageDefinition) {
         if (
           languageDefinition.abstractSyntax.elements[this.currentObject.type]

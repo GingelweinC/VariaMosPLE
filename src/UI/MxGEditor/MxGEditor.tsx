@@ -702,9 +702,7 @@ export default class MxGEditor extends Component<Props, State> {
         let relationshipType = null; //  source.value.tagName + "_" + target.value.tagName;
 
         let languageDefinition: any =
-          me.props.projectService.getLanguageDefinition(
-            "" + me.currentModel.type
-          );
+          me.props.projectService.currentLanguage;
 
         if (languageDefinition.abstractSyntax.relationships) {
           for (let key in languageDefinition.abstractSyntax.relationships) {
@@ -1055,9 +1053,7 @@ export default class MxGEditor extends Component<Props, State> {
     this.clearHistoryPreview();
 
     const languageDefinition: any =
-      this.props.projectService.getLanguageDefinition(
-        "" + this.currentModel.type
-      );
+      this.props.projectService.currentLanguage;
 
     const elementDefinition =
       languageDefinition?.concreteSyntax?.elements?.[oldElement.type];
@@ -1302,9 +1298,7 @@ export default class MxGEditor extends Component<Props, State> {
   refreshEdgeStyle(edge: any) {
     let me = this;
     let languageDefinition: any =
-      me.props.projectService.getLanguageDefinition(
-        "" + me.currentModel.type
-      );
+      me.props.projectService.currentLanguage;
     let relationship = me.props.projectService.findModelRelationshipById(me.currentModel, edge.value.getAttribute("uid"));
     if (languageDefinition.concreteSyntax.relationships) {
       if (languageDefinition.concreteSyntax.relationships[relationship.type]) {
@@ -1412,9 +1406,7 @@ export default class MxGEditor extends Component<Props, State> {
   refreshEdgeLabel(edge: any) {
     let me = this;
     let languageDefinition: any =
-      me.props.projectService.getLanguageDefinition(
-        "" + me.currentModel.type
-      );
+      me.props.projectService.currentLanguage;
     let label_property = null;
     let relationship = me.props.projectService.findModelRelationshipById(me.currentModel, edge.value.getAttribute("uid"));
     if (languageDefinition.concreteSyntax.relationships) {
@@ -1463,9 +1455,7 @@ export default class MxGEditor extends Component<Props, State> {
   refreshVertexLabel(vertice: any) {
     let me = this;
     let languageDefinition: any =
-      me.props.projectService.getLanguageDefinition(
-        "" + me.currentModel.type
-      );
+      me.props.projectService.currentLanguage;
     let label_property = null;
     let uid = vertice.value.getAttribute("uid");
     let element = me.props.projectService.findModelElementById(me.currentModel, uid);
@@ -1599,7 +1589,7 @@ export default class MxGEditor extends Component<Props, State> {
           }
           // ---------------------------------------------------------
           if (model) {
-            let languageDefinition: any = this.props.projectService.getLanguageDefinition("" + model.type);
+            let languageDefinition: any = this.props.projectService.currentLanguage;
             if (!languageDefinition) {
               console.error("Language definition not found for model type:", model.type);
               this.showMessageModal("Error", "Language definition not found for model type: " + model.type);
@@ -1811,9 +1801,7 @@ export default class MxGEditor extends Component<Props, State> {
   createCustomOverlays(element: any, cell: any) {
     let me = this;
     let languageDefinition: any =
-      me.props.projectService.getLanguageDefinition(
-        "" + me.currentModel.type
-      );
+      me.props.projectService.currentLanguage;
 
     if (languageDefinition.concreteSyntax.elements) {
       if (languageDefinition.concreteSyntax.elements[element.type]) {
@@ -2085,9 +2073,7 @@ export default class MxGEditor extends Component<Props, State> {
         return;
       }
 
-      const languageDefinition = this.props.projectService.getLanguageDefinition(
-        this.currentModel.type
-      );
+      const languageDefinition = this.props.projectService.currentLanguage;
       const abstractSyntax = typeof languageDefinition?.abstractSyntax === "string"
         ? JSON.parse(languageDefinition.abstractSyntax)
         : languageDefinition?.abstractSyntax ?? {};

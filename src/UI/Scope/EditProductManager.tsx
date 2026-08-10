@@ -350,7 +350,7 @@ const EditProductManager: React.FC<EditProductManagerProps> = ({ projectService,
     projectService: ProjectService,
     currentModel: Model
   ): Element {
-    let languageDef = projectService.getLanguageDefinition();
+    let languageDef = projectService.currentLanguage;
     let abstractSyntax: any = languageDef.abstractSyntax;
     if (typeof abstractSyntax === "string") {
       abstractSyntax = JSON.parse(abstractSyntax);

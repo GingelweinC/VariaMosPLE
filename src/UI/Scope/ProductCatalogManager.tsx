@@ -255,7 +255,6 @@ useEffect(() => {
       selectedParentId,
       newSubName,
       projectService,
-      currentModel
     );
     currentModel.elements.push(newElement);
 
@@ -516,9 +515,8 @@ const handleUploadProductImage = (file: File) => {
     parentId: string,
     defaultName: string,
     projectService: ProjectService,
-    currentModel: Model
   ): Element {
-    let languageDef = projectService.getLanguageDefinition();
+    let languageDef = projectService.currentLanguage;
     let abstractSyntax: any = languageDef.abstractSyntax;
     if (typeof abstractSyntax === "string") {
       abstractSyntax = JSON.parse(abstractSyntax);

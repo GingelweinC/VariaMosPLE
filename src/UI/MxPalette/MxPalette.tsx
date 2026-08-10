@@ -101,7 +101,7 @@ export default class MxPalette extends Component<Props, State> {
     }
 
     let languageDefinition: any =
-      me.props.projectService.getLanguageDefinition();
+      me.props.projectService.currentLanguage;
 
     let type = vertex.getAttribute("type");
     let instanceOfId = vertex.getAttribute("instanceOfId");
