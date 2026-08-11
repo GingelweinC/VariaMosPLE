@@ -1,10 +1,9 @@
-import { randomUUID, UUID } from "node:crypto";
 import { Property } from "./Property";
 
 export class Reification {
-  id: string = randomUUID();
+  id: string = crypto.randomUUID();
   name: string;
-  typeId: UUID;
+  typeId: string;
   endpoints: Record<string, string[]> = {};
   properties: Property[] = [];
   x: number = 0;
@@ -12,7 +11,7 @@ export class Reification {
   width: number = 100;
   height: number = 60;
   parentId: string = null;
-  constructor(name: string, typeId: UUID) {
+  constructor(name: string, typeId: string) {
     this.name = name;
     this.typeId = typeId;
   }

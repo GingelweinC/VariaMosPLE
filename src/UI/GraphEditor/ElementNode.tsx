@@ -88,37 +88,10 @@ export default function ElementNode({
   );
 }
 
-export function convertElementToNode(element: Element) {
-  const elementType = {
-    languageId: "a5981f7c-e3c4-4829-a026-d2d0fe153ea8",
-    uuid: "70c5679b-24b7-4355-a6fa-031d23318474",
-    name: "Feature",
-    description: "",
-    style: {
-      fill: {
-        type: "solid",
-        value: "#ffffff",
-      },
-      font: {
-        size: 12,
-        color: "#000000",
-      },
-      stroke: {
-        type: "solid",
-        value: "#000000",
-        width: 1,
-      },
-    },
-    constraint: "",
-    createdAt: "2026-08-05T18:22:49.671148+00:00",
-    updatedAt: "2026-08-05T18:22:49.671148+00:00",
-    properties: {
-      isSelected: {
-        type: "boolean",
-      },
-    },
-  };
-
+export function convertElementToNode(elementTypes: any[], element: Element) {
+  const elementType = elementTypes.find(
+    (elementType) => elementType.uuid === element.type,
+  );
   return {
     id: element.id,
     position: { x: element.x, y: element.y },

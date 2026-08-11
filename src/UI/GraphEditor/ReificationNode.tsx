@@ -70,15 +70,13 @@ export default function ReificationNode({
         width: reification.width,
       }}
     >
+      {Object.entries(reification.endpoints).map(([name, elementTypes]) => (
+        <>name</>
+      ))}
       <Handle
         className="full-node-handle"
         type="source"
         position={Position.Right}
-      />
-      <Handle
-        className="full-node-handle"
-        type="target"
-        position={Position.Left}
       />
       <NodeResizer isVisible={selected} onResize={onResize} />
 
@@ -92,23 +90,13 @@ export default function ReificationNode({
   );
 }
 
-export function convertReificationToNode(reification: Reification) {
-  const reificationType = {
-    languageId: "a5981f7c-e3c4-4829-a026-d2d0fe153ea8",
-    uuid: "10915e35-41ec-4997-be11-d90c40695e10",
-    name: "Range",
-    description: "",
-    style: {
-      fill: { type: "solid", value: "#ffffff" },
-      font: { size: 12, color: "#000000" },
-      shape: "circle",
-      stroke: { type: "solid", value: "#000000", width: 1 },
-    },
-    constraint: "",
-    createdAt: "2026-08-05T18:22:49.671148+00:00",
-    updatedAt: "2026-08-05T18:22:49.671148+00:00",
-    properties: { max: { type: "integer" }, min: { type: "integer" } },
-  };
+export function convertReificationToNode(
+  reificationTypes: any[],
+  reification: Reification,
+) {
+  const reificationType = reificationTypes.find(
+    (reificationType) => reificationType.uuid === reification.typeId,
+  );
 
   return {
     id: reification.id,

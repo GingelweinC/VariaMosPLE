@@ -51,23 +51,13 @@ export default function RelationEdge({
   );
 }
 
-export function convertRelationToEdge(relation: Relationship) {
-  // To get from currentLanguage and relation.type
-  const relationType = {
-    languageId: "a5981f7c-e3c4-4829-a026-d2d0fe153ea8",
-    uuid: "a5a3f5b1-09c0-4af0-b97e-c18f3099e632",
-    name: "Dependency",
-    description: "",
-    style: {
-      stroke: { type: "solid", color: "#000000", width: 2 },
-      sourceArrow: { type: "none", height: undefined, width: undefined },
-      targetArrow: { type: "arrow", height: 10, width: 10 },
-    },
-    properties: { isMandatory: { type: "boolean" } },
-    constraint: "",
-    createdAt: "2026-08-05T18:31:03.661Z",
-    updatedAt: "2026-08-05T18:31:03.661Z",
-  };
+export function convertRelationToEdge(
+  relationTypes: any[],
+  relation: Relationship,
+) {
+  const relationType = relationTypes.find(
+    (relationType) => relationType.uuid === relation.type,
+  );
   return {
     id: relation.id,
     source: relation.sourceId,

@@ -1,6 +1,7 @@
 import "./index.css";
 
 import ElementItem from "./ElementItem";
+import ReificationItem from "./ReificationItem";
 
 export interface SideBarProps {
   elementTypes: Record<string, any>[];
@@ -30,10 +31,10 @@ export default function SideBar({
       <div>Reification Types</div>
       {reificationTypes.map((reificationType) => {
         return (
-          <ElementItem
+          <ReificationItem
             key={reificationType.uuid}
-            elementType={reificationType}
-            addElement={addReification}
+            reificationType={reificationType}
+            addReification={addReification}
           />
         );
       })}

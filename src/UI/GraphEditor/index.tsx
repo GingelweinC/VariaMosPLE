@@ -36,11 +36,26 @@ export default function GraphEditor({
   const [edges, setEdges] = useState<Edge[]>([]);
 
   useEffect(() => {
-    setNodes(projectService.currentModel.elements.map(convertElementToNode));
+    setNodes([
+      ...projectService.currentModel.elements.map((element) =>
+        convertElementToNode(projectService.currentLanguage.Elements, element),
+      ),
+      ...projectService.currentModel.reifications.map((reification) =>
+        convertReificationToNode(
+          projectService.currentLanguage.Reifications,
+          reification,
+        ),
+      ),
+    ]);
     setEdges(
-      projectService.currentModel.relationships.map(convertRelationToEdge),
+      projectService.currentModel.relationships.map((relation) =>
+        convertRelationToEdge(
+          projectService.currentLanguage.Relationships,
+          relation,
+        ),
+      ),
     );
-  }, [projectService.currentModel]);
+  }, [projectService.currentLanguage, projectService.currentModel]);
 
   const nodeTypes: NodeTypes = {
     element: ElementNode,
@@ -101,14 +116,20 @@ export default function GraphEditor({
           );
           setNodes((nodesSnapshot) => [
             ...nodesSnapshot,
-            convertElementToNode(element),
+            convertElementToNode(
+              projectService.currentLanguage.Elements,
+              element,
+            ),
           ]);
         }}
         addReification={(reification: Reification) => {
           projectService.currentModel.reifications.push(reification);
           setNodes((nodesSnapshot) => [
             ...nodesSnapshot,
-            convertReificationToNode(reification),
+            convertReificationToNode(
+              projectService.currentLanguage.Reifications,
+              reification,
+            ),
           ]);
         }}
       />

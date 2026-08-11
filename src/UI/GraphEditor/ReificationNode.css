@@ -1,7 +1,11 @@
 .reification-node {
   padding: 2px;
+  display: flex;
+  flex-direction: column;
   text-align: center;
+  justify-content: center;
   overflow: hidden;
+  border-radius: 40%;
 }
 
 .reification-node-title {
