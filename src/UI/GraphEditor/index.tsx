@@ -22,63 +22,25 @@ import SideBar from "./SideBar";
 import { useCallback, useEffect, useState } from "react";
 import ElementNode, { convertElementToNode } from "./ElementNode";
 import ProjectService from "../../Application/Project/ProjectService";
-import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
-import ReificationNode from "./ReificationNode";
+import ReificationNode, { convertReificationToNode } from "./ReificationNode";
 import RelationEdge, { convertRelationToEdge } from "./RelationEdge";
-
-const dummy_element_types = [
-  {
-    languageId: "7b4d9a3e-d5fe-4fd3-8598-1ea4fe09c050",
-    uuid: "bfd05474-2935-4c08-a5a6-a57e51bf8c99",
-    name: "My First Element",
-    description: "The first element I create in The new Language Table",
-    style: {
-      fill: { type: "solid", value: "#ffffff" },
-      font: { size: 12, color: "#000000" },
-      stroke: { type: "solid", value: "#000000", width: 1 },
-    },
-    properties: {},
-    constraint: "$$$$",
-    createdAt: "2026-07-23T19:14:17.721Z",
-    updatedAt: "2026-07-23T19:14:17.721Z",
-  },
-  {
-    languageId: "7b4d9a3e-d5fe-4fd3-8598-1ea4fe09c050",
-    uuid: "e9d35069-91c1-45de-a554-75ccfc9b761f",
-    name: "My second Element",
-    description: "see other description of first element",
-    style: {
-      fill: { type: "solid", value: "#ffffff" },
-      font: { size: 12, color: "#000000" },
-      stroke: { type: "solid", value: "#000000", width: 1 },
-    },
-    properties: {},
-    constraint: "$$$",
-    createdAt: "2026-07-23T19:14:34.120Z",
-    updatedAt: "2026-07-23T19:14:34.120Z",
-  },
-];
+import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
+import { Reification } from "../../Domain/ProductLineEngineering/Entities/Reification";
 
 export default function GraphEditor({
   projectService,
 }: Readonly<{
   projectService: ProjectService;
 }>): JSX.Element {
-  const [currentModel, setCurrentModel] = useState<Model>(
-    projectService.currentModel,
-  );
-
-  projectService.addSelectedModelListener((e: { model: Model }) => {
-    setCurrentModel(e.model);
-  });
-
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
   useEffect(() => {
-    setNodes(currentModel.elements.map(convertElementToNode));
-    setEdges(currentModel.relationships.map(convertRelationToEdge));
-  }, [currentModel]);
+    setNodes(projectService.currentModel.elements.map(convertElementToNode));
+    setEdges(
+      projectService.currentModel.relationships.map(convertRelationToEdge),
+    );
+  }, [projectService.currentModel]);
 
   const nodeTypes: NodeTypes = {
     element: ElementNode,
@@ -124,7 +86,32 @@ export default function GraphEditor({
           <MiniMap pannable />
         </ReactFlow>
       </div>
-      <SideBar element_types={dummy_element_types} />
+      <SideBar
+        elementTypes={projectService.currentLanguage.Elements}
+        reificationTypes={projectService.currentLanguage.Reifications}
+        addElement={(element: Element) => {
+          projectService.currentModel.elements.push(element);
+          projectService.raiseEventCreatedElement(
+            projectService.currentModel,
+            element,
+          );
+          projectService.raiseEventUpdatedElement(
+            projectService.currentModel,
+            element,
+          );
+          setNodes((nodesSnapshot) => [
+            ...nodesSnapshot,
+            convertElementToNode(element),
+          ]);
+        }}
+        addReification={(reification: Reification) => {
+          projectService.currentModel.reifications.push(reification);
+          setNodes((nodesSnapshot) => [
+            ...nodesSnapshot,
+            convertReificationToNode(reification),
+          ]);
+        }}
+      />
     </div>
   );
 }

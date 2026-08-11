@@ -1,4 +1,5 @@
 .element-node {
+  padding: 2px;
   text-align: center;
   overflow: hidden;
 }

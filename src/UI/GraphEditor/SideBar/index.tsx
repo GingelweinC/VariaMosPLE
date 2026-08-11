@@ -3,16 +3,39 @@ import "./index.css";
 import ElementItem from "./ElementItem";
 
 export interface SideBarProps {
-  element_types: Record<string, any>[];
+  elementTypes: Record<string, any>[];
+  reificationTypes: Record<string, any>[];
+  addElement: Function;
+  addReification: Function;
 }
 
 export default function SideBar({
-  element_types,
+  elementTypes,
+  reificationTypes,
+  addElement,
+  addReification,
 }: Readonly<SideBarProps>): JSX.Element {
   return (
     <div className="sidebar">
-      {element_types.map((element_type) => {
-        return <ElementItem key={element_type.uuid} element={element_type} />;
+      <div>Element Types</div>
+      {elementTypes.map((elementType) => {
+        return (
+          <ElementItem
+            key={elementType.uuid}
+            elementType={elementType}
+            addElement={addElement}
+          />
+        );
+      })}
+      <div>Reification Types</div>
+      {reificationTypes.map((reificationType) => {
+        return (
+          <ElementItem
+            key={reificationType.uuid}
+            elementType={reificationType}
+            addElement={addReification}
+          />
+        );
       })}
     </div>
   );

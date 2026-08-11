@@ -1,0 +1,10 @@
+.reification-node {
+  padding: 2px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.reification-node-title {
+  font-weight: bold;
+  text-overflow: ellipsis;
+}

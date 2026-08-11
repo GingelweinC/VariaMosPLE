@@ -7,8 +7,8 @@ export class Element {
   name: string;
   x: number = 0;
   y: number = 0;
-  width: number = 0;
-  height: number = 0;
+  width: number = 100;
+  height: number = 60;
   parentId: string; 
   instanceOfId: string; 
   properties: Property[] = [];

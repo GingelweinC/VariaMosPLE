@@ -1,9 +1,27 @@
+import { Element } from "../../../Domain/ProductLineEngineering/Entities/Element";
+
 export interface ElementItemProps {
-  element: Record<string, any>;
+  elementType: Record<string, any>;
+  addElement: Function;
 }
 
 export default function ElementItem({
-  element,
+  elementType,
+  addElement,
 }: Readonly<ElementItemProps>): JSX.Element {
-  return <div className="element-item">{element.name}</div>;
+  return (
+    <div className="element-item">
+      {elementType.name}
+      <button
+        type="button"
+        onClick={() =>
+          addElement(
+            new Element("New " + elementType.name, elementType.uuid, [], null),
+          )
+        }
+      >
+        +
+      </button>
+    </div>
+  );
 }
