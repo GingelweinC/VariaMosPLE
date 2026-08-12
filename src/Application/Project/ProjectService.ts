@@ -653,6 +653,28 @@ export default class ProjectService {
   saveProjectInServer(projectInformation: ProjectInformation, successCallback: any, errorCallback: any): void {
     let me = this;
     let user = this.getUser();
+    this._project.productLines.forEach((productLine) => {
+      productLine.scope.models =
+        productLine.applicationEngineering.models.map((model) =>
+          model.id === this._currentModel.id
+            ? this._currentModel
+            : model,
+        );
+
+      productLine.applicationEngineering.models =
+        productLine.applicationEngineering.models.map((model) =>
+          model.id === this._currentModel.id
+            ? this._currentModel
+            : model,
+        );
+
+      productLine.domainEngineering.models =
+        productLine.domainEngineering.models.map((model) =>
+          model.id === this._currentModel.id
+            ? this._currentModel
+            : model,
+        );
+    });
     projectInformation.project = this._project;
 
     let sc = (e) => {

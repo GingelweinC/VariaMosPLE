@@ -113,3 +113,16 @@ export function convertReificationToNode(
     type: "reification",
   };
 }
+
+export function convertNodeToReification(node: Node): Reification {
+  const reification = node.data.reification as Reification;
+
+  reification.x = node.position.x;
+  reification.y = node.position.y;
+
+  reification.width = node.measured.width;
+  reification.height = node.measured.height;
+
+  //properties TODO
+  return reification;
+}

@@ -107,3 +107,16 @@ export function convertElementToNode(elementTypes: any[], element: Element) {
     type: "element",
   };
 }
+
+export function convertNodeToElement(node: Node): Element {
+  const element = node.data.element as Element;
+
+  element.x = node.position.x;
+  element.y = node.position.y;
+
+  element.width = node.measured.width;
+  element.height = node.measured.height;
+
+  //properties TODO
+  return element;
+}

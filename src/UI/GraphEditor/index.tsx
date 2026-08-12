@@ -20,9 +20,9 @@ import {
 } from "@xyflow/react";
 import SideBar from "./SideBar";
 import { useCallback, useEffect, useState } from "react";
-import ElementNode, { convertElementToNode } from "./ElementNode";
+import ElementNode, { convertElementToNode, convertNodeToElement } from "./ElementNode";
 import ProjectService from "../../Application/Project/ProjectService";
-import ReificationNode, { convertReificationToNode } from "./ReificationNode";
+import ReificationNode, { convertReificationToNode, convertNodeToReification } from "./ReificationNode";
 import RelationEdge, { convertRelationToEdge } from "./RelationEdge";
 import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
 import { Reification } from "../../Domain/ProductLineEngineering/Entities/Reification";
@@ -66,9 +66,69 @@ export default function GraphEditor({
   };
 
   const onNodesChange: OnNodesChange = useCallback(
-    (changes) =>
-      setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
-    [],
+    (changes) => 
+      setNodes((nodesSnapshot) => {
+        const updatedNodes = applyNodeChanges(
+          changes,
+          nodesSnapshot,
+        );
+
+        changes.forEach((change) => {
+          console.log("change", change);
+          if (change.type === "add") {
+            return;
+          }
+
+          if (change.type === "remove") {
+            const node = nodesSnapshot.find(
+              (node) => node.id === change.id,
+            );
+
+            if (!node) {
+              return;
+            }
+
+            if (node.type === "element") {
+              projectService.currentModel.elements =
+                projectService.currentModel.elements.filter(
+                  (element) => element.id !== node.id,
+                );
+            } else if (node.type === "reification") {
+              projectService.currentModel.reifications =
+                projectService.currentModel.reifications.filter(
+                  (reification) => reification.id !== node.id,
+                );
+            }
+
+            return;
+          }
+
+          const node = updatedNodes.find(
+            (node) => node.id === change.id,
+          );
+
+          if (!node) {
+            return;
+          }
+
+          if (node.type === "element") {
+            const element = convertNodeToElement(node);
+
+            projectService.raiseEventUpdatedElement(
+              projectService.currentModel,
+              element,
+            );
+            console.log("updated model", projectService.currentModel);
+            console.log("updated element", element);
+            console.log("updated project", projectService.project);
+          } else if (node.type === "reification") {
+            convertNodeToReification(node);
+          }
+        });
+
+        return updatedNodes;
+      }),
+    [projectService],
   );
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) =>
@@ -105,31 +165,34 @@ export default function GraphEditor({
         elementTypes={projectService.currentLanguage.Elements}
         reificationTypes={projectService.currentLanguage.Reifications}
         addElement={(element: Element) => {
+          const node = convertElementToNode(
+            projectService.currentLanguage.Elements,
+            element,
+          );
+
           projectService.currentModel.elements.push(element);
+
           projectService.raiseEventCreatedElement(
             projectService.currentModel,
             element,
           );
-          projectService.raiseEventUpdatedElement(
-            projectService.currentModel,
-            element,
-          );
+
           setNodes((nodesSnapshot) => [
             ...nodesSnapshot,
-            convertElementToNode(
-              projectService.currentLanguage.Elements,
-              element,
-            ),
+            node,
           ]);
         }}
         addReification={(reification: Reification) => {
+          const node = convertReificationToNode(
+            projectService.currentLanguage.Reifications,
+            reification,
+          );
+
           projectService.currentModel.reifications.push(reification);
+
           setNodes((nodesSnapshot) => [
             ...nodesSnapshot,
-            convertReificationToNode(
-              projectService.currentLanguage.Reifications,
-              reification,
-            ),
+            node,
           ]);
         }}
       />
