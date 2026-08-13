@@ -20,6 +20,20 @@ export type ReificationNodeType = Node<
   "reification"
 >;
 
+function generatePosition(i: number) {
+  const n = i % 4;
+  switch (n) {
+    case 0:
+      return Position.Top;
+    case 1:
+      return Position.Bottom;
+    case 2:
+      return Position.Left;
+    case 3:
+      return Position.Right;
+  }
+}
+
 export default function ReificationNode({
   id,
   data: { reification, style },
@@ -70,14 +84,15 @@ export default function ReificationNode({
         width: reification.width,
       }}
     >
-      {Object.entries(reification.endpoints).map(([name, elementTypes]) => (
-        <>name</>
+      {reification.endpoints.map((endpoint, index) => (
+        <Handle
+          key={endpoint.uuid}
+          id={endpoint.uuid}
+          type="source"
+          position={generatePosition(index)}
+        />
       ))}
-      <Handle
-        className="full-node-handle"
-        type="source"
-        position={Position.Right}
-      />
+
       <NodeResizer isVisible={selected} onResize={onResize} />
 
       <div className="reification-node-title">{reification.name}</div>

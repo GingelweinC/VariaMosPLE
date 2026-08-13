@@ -19,6 +19,12 @@ export default function ReificationItem({
             new Reification(
               "New " + reificationType.name,
               reificationType.uuid,
+              [],
+              reificationType.endpoints.map((endpoint: { uuid: any }) => [
+                endpoint.uuid,
+                [],
+              ]),
+              null,
             ),
           )
         }
