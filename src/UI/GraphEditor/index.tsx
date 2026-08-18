@@ -503,46 +503,67 @@ function GraphEditorContent({
     }
   };
 
-  const onConnect: OnConnect = (params) => {
-    if (currentRelationType !== null) {
-      const newRelation = new Relationship(
-        crypto.randomUUID(),
-        "New " + currentRelationType.name,
-        currentRelationType.uuid,
-        params.source,
-        params.target,
-        [],
-        0,
-        Number.MAX_SAFE_INTEGER,
-      );
-      projectService.currentModel.relationships.push(newRelation);
-      const newEdge = convertRelationToEdge(
-        projectService.currentLanguage.Relationships,
-        newRelation,
-      );
-      setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
-      setCurrentRelationType(null);
-    }
-    if (currentEndpointType) {
-      let reification = projectService.currentModel.reifications.find(
-        (reification) => reification.id === params.source,
-      );
-      let endpoint = reification.endpoints.find(
-        (endpoint) => endpoint.id === params.sourceHandle,
-      );
-      if (!endpoint) {
-        endpoint = new Endpoint(currentEndpointType.id, []);
-        reification.endpoints.push(endpoint);
+  const onConnect: OnConnect = useCallback(
+    (params) => {
+      if (currentRelationType !== null) {
+        const newRelation = new Relationship(
+          crypto.randomUUID(),
+          "New " + currentRelationType.name,
+          currentRelationType.uuid,
+          params.source,
+          params.target,
+          [],
+          0,
+          Number.MAX_SAFE_INTEGER
+        );
+
+        projectService.currentModel.relationships.push(newRelation);
+
+        const newEdge = convertRelationToEdge(
+          projectService.currentLanguage.Relationships,
+          newRelation
+        );
+
+        setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
+        setCurrentRelationType(null);
+
+        syncModelChanges();
       }
-      endpoint.elements.push(params.target);
-      const newEdge = convertReificationEndpointToEdges(
-        projectService.currentLanguage.Reifications,
-        reification.id,
-        endpoint,
-      ).at(-1);
-      setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
-    }
-  };
+
+      if (currentEndpointType) {
+        let reification = projectService.currentModel.reifications.find(
+          (reification) => reification.id === params.source
+        );
+
+        let endpoint = reification.endpoints.find(
+          (endpoint) => endpoint.id === params.sourceHandle
+        );
+
+        if (!endpoint) {
+          endpoint = new Endpoint(currentEndpointType.id, []);
+          reification.endpoints.push(endpoint);
+        }
+
+        endpoint.elements.push(params.target);
+
+        const newEdge = convertReificationEndpointToEdges(
+          projectService.currentLanguage.Reifications,
+          reification.id,
+          endpoint
+        ).at(-1);
+
+        setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
+        syncModelChanges();
+      }
+    },
+    [
+      currentRelationType,
+      currentEndpointType,
+      projectService,
+      syncModelChanges,
+      setCurrentRelationType,
+    ]
+  );
 
   return (
     <div className="graph-editor" ref={graphContainerRef}>

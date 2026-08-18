@@ -10,6 +10,7 @@ import { Relationship } from "../../Domain/ProductLineEngineering/Entities/Relat
 import { ModelDiff } from "../../DataProvider/Services/incrementalSyncService";
 import ProjectService from "../../Application/Project/ProjectService";
 import { convertElementToNode } from "./ElementNode";
+import { convertRelationToEdge } from './RelationEdge';
 
 export class IncrementalGraphUpdater {
   private reactFlow: ReactFlowInstance;
@@ -245,43 +246,7 @@ export class IncrementalGraphUpdater {
     const newEdges: Edge[] = [];
 
     relationships.forEach(relationship => {
-      const source = this.nodes[relationship.sourceId];
-      const target = this.nodes[relationship.targetId];
-
-      if (!source || !target) {
-        return;
-      }
-
-      const edge: Edge = {
-        id: relationship.id,
-
-        source: relationship.sourceId,
-        target: relationship.targetId,
-
-        type: "default",
-
-        data: {
-          label: relationship.name,
-          type: relationship.type,
-          ...(relationship.points
-            ? { points: relationship.points }
-            : {}),
-        },
-
-        style: {
-          stroke: "#69b630",
-          strokeWidth: 3,
-        },
-
-        markerEnd: {
-          type: "arrowclosed",
-          width: 8,
-          height: 8,
-        },
-      };
-
-      newEdges.push(edge);
-      this.edges[edge.id] = edge;
+      newEdges.push(convertRelationToEdge(this.projectService.currentLanguage.Relationships, relationship));
     });
 
     if (newEdges.length > 0) {
