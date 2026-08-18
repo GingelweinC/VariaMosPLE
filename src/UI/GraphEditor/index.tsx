@@ -276,7 +276,7 @@ function GraphEditorContent({
 
   const edgeTypes: EdgeTypes = {
     relation: RelationEdge,
-    ReificationEndpoint: ReificationEndpointEdge,
+    reificationEndpoint: ReificationEndpointEdge,
   };
 
   const onNodesChange: OnNodesChange = useCallback(
