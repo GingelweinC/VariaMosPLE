@@ -5,7 +5,6 @@ import {
   Node,
   NodeProps,
   NodeResizer,
-  OnResize,
   Position,
   useConnection,
   useReactFlow,
@@ -15,53 +14,22 @@ import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
 import { useCallback, useEffect } from "react";
 import { useConnectionContext } from "./ConnectionContext";
 
-export type ElementNodeType = Node<
-  {
-    element: Element;
-    style: React.CSSProperties;
-  },
-  "element"
->;
+export type ElementNodeType = Node<{
+  element: Element;
+  style: React.CSSProperties;
+  onResizeEnd?: (nodeId: string, width: number, height: number) => void;
+}, "element">;
 
 export default function ElementNode({
   id,
-  data: { element, style },
+  data: { element, style, onResizeEnd },
   selected,
+  width,
+  height,
 }: NodeProps<ElementNodeType>): JSX.Element {
-  const { updateNode } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const connection = useConnection();
   const { currentRelationType, currentEndpointType } = useConnectionContext();
-
-  const onResize: OnResize = useCallback(
-    (_event, params) => {
-      updateNode(id, (node: Node) => {
-        const element = node.data.element as Element;
-        return {
-          ...node,
-          position: {
-            x:
-              params.direction[0] === 1
-                ? node.position.x + Math.max(0, element.width - params.width)
-                : node.position.x - Math.max(0, params.width - element.width),
-            y:
-              params.direction[1] === 1
-                ? node.position.y + Math.max(0, element.height - params.height)
-                : node.position.y - Math.max(0, params.height - element.height),
-          },
-          data: {
-            ...node.data,
-            element: {
-              ...element,
-              height: params.height,
-              width: params.width,
-            },
-          },
-        };
-      });
-    },
-    [id, updateNode],
-  );
 
   const isCurrentSource = connection.fromNode?.id === element.id;
   const isPossibleSource =
@@ -86,8 +54,8 @@ export default function ElementNode({
       className="element-node"
       style={{
         ...style,
-        height: element.height,
-        width: element.width,
+        width: width ?? style.width,
+        height: height ?? style.height,
       }}
     >
       <Handle
@@ -110,9 +78,17 @@ export default function ElementNode({
         position={Position.Bottom}
       />
 
-      <NodeResizer isVisible={selected} onResize={onResize} />
+      <NodeResizer
+        isVisible={selected}
+        minWidth={20}
+        minHeight={20}
+        onResizeEnd={(_, params) => {
+          onResizeEnd?.(id, params.width, params.height);
+        }}
+      />
 
       <div className="element-node-title">{element.name}</div>
+
       {element.properties.map((p) => (
         <div className="element-node-property" key={p.id}>
           {p.name} = {p.value}
@@ -121,17 +97,26 @@ export default function ElementNode({
     </div>
   );
 }
-
-export function convertElementToNode(elementTypes: any[], element: Element) {
+export function convertElementToNode(
+  elementTypes: any[],
+  element: Element,
+  onResizeEnd?: (nodeId: string, width: number, height: number) => void
+) {
   const elementType = elementTypes.find(
-    (elementType) => elementType.uuid === element.type,
+    (elementType) => elementType.uuid === element.type
   );
+
   return {
     id: element.id,
     position: { x: element.x, y: element.y },
+    width: element.width,
+    height: element.height,
     data: {
-      element: element,
+      element,
+      onResizeEnd,
       style: {
+        width: element.width,
+        height: element.height,
         backgroundColor: elementType.style.fill.value,
         color: elementType.style.font.color,
         fontSize: `${elementType.style.font.size}px`,
@@ -144,13 +129,12 @@ export function convertElementToNode(elementTypes: any[], element: Element) {
 
 export function convertNodeToElement(node: Node): Element {
   const element = node.data.element as Element;
+  const style = node.data.style as React.CSSProperties;
 
   element.x = node.position.x;
   element.y = node.position.y;
+  element.width = node.width;
+  element.height = node.height;
 
-  element.width = node.measured.width;
-  element.height = node.measured.height;
-
-  //properties TODO
   return element;
 }
