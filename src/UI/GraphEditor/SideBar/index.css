@@ -14,6 +14,7 @@
 }
 
 .element-item,
+.relation-item,
 .reification-item {
   width: 100%;
 
@@ -26,4 +27,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px;
+}
+
+.relation-item-active {
+  box-shadow: 0px 0px 10px 2px rgb(0, 179, 255);
 }

@@ -2,7 +2,6 @@ import "./index.css";
 import "@xyflow/react/dist/style.css";
 
 import {
-  addEdge,
   applyEdgeChanges,
   applyNodeChanges,
   Background,
@@ -20,20 +19,47 @@ import {
 } from "@xyflow/react";
 import SideBar from "./SideBar";
 import { useCallback, useEffect, useState } from "react";
-import ElementNode, { convertElementToNode, convertNodeToElement } from "./ElementNode";
+import ElementNode, {
+  convertElementToNode,
+  convertNodeToElement,
+} from "./ElementNode";
 import ProjectService from "../../Application/Project/ProjectService";
-import ReificationNode, { convertReificationToNode, convertNodeToReification } from "./ReificationNode";
+import ReificationNode, {
+  convertReificationToNode,
+  convertNodeToReification,
+} from "./ReificationNode";
 import RelationEdge, { convertRelationToEdge } from "./RelationEdge";
+import {
+  ConnectingContextProvider,
+  useConnectionContext,
+} from "./ConnectionContext";
 import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
 import { Reification } from "../../Domain/ProductLineEngineering/Entities/Reification";
+import ReificationEndpointEdge from "./ReificationEndpointEdge";
+import { Relationship } from "../../Domain/ProductLineEngineering/Entities/Relationship";
 
 export default function GraphEditor({
   projectService,
 }: Readonly<{
   projectService: ProjectService;
 }>): JSX.Element {
+  return (
+    <ConnectingContextProvider>
+      <GraphEditorContent projectService={projectService} />
+    </ConnectingContextProvider>
+  );
+}
+
+function GraphEditorContent({
+  projectService,
+}: Readonly<{
+  projectService: ProjectService;
+}>): JSX.Element {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
+
+  const { currentRelationType, setCurrentRelationType } =
+    useConnectionContext();
 
   useEffect(() => {
     setNodes([
@@ -63,15 +89,13 @@ export default function GraphEditor({
   };
   const edgeTypes: EdgeTypes = {
     relation: RelationEdge,
+    ReificationEndpoint: ReificationEndpointEdge,
   };
 
   const onNodesChange: OnNodesChange = useCallback(
-    (changes) => 
+    (changes) =>
       setNodes((nodesSnapshot) => {
-        const updatedNodes = applyNodeChanges(
-          changes,
-          nodesSnapshot,
-        );
+        const updatedNodes = applyNodeChanges(changes, nodesSnapshot);
 
         changes.forEach((change) => {
           console.log("change", change);
@@ -80,9 +104,7 @@ export default function GraphEditor({
           }
 
           if (change.type === "remove") {
-            const node = nodesSnapshot.find(
-              (node) => node.id === change.id,
-            );
+            const node = nodesSnapshot.find((node) => node.id === change.id);
 
             if (!node) {
               return;
@@ -103,9 +125,7 @@ export default function GraphEditor({
             return;
           }
 
-          const node = updatedNodes.find(
-            (node) => node.id === change.id,
-          );
+          const node = updatedNodes.find((node) => node.id === change.id);
 
           if (!node) {
             return;
@@ -136,10 +156,28 @@ export default function GraphEditor({
     [],
   );
 
-  const onConnect: OnConnect = useCallback(
-    (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
-    [],
-  );
+  const onConnect: OnConnect = (params) => {
+    if (currentRelationType !== null) {
+      const newRelation = new Relationship(
+        crypto.randomUUID(),
+        "New " + currentRelationType.name,
+        currentRelationType.uuid,
+        params.source,
+        params.target,
+        [],
+        0,
+        Number.MAX_SAFE_INTEGER,
+      );
+      projectService.currentModel.relationships.push(newRelation);
+      const newEdge = convertRelationToEdge(
+        projectService.currentLanguage.Relationships,
+        newRelation,
+      );
+      console.log(newRelation, newEdge);
+      setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
+      setCurrentRelationType(null);
+    }
+  };
 
   return (
     <div className="graph-editor">
@@ -163,6 +201,7 @@ export default function GraphEditor({
       </div>
       <SideBar
         elementTypes={projectService.currentLanguage.Elements}
+        relationTypes={projectService.currentLanguage.Relationships}
         reificationTypes={projectService.currentLanguage.Reifications}
         addElement={(element: Element) => {
           const node = convertElementToNode(
@@ -177,10 +216,7 @@ export default function GraphEditor({
             element,
           );
 
-          setNodes((nodesSnapshot) => [
-            ...nodesSnapshot,
-            node,
-          ]);
+          setNodes((nodesSnapshot) => [...nodesSnapshot, node]);
         }}
         addReification={(reification: Reification) => {
           const node = convertReificationToNode(
@@ -190,10 +226,7 @@ export default function GraphEditor({
 
           projectService.currentModel.reifications.push(reification);
 
-          setNodes((nodesSnapshot) => [
-            ...nodesSnapshot,
-            node,
-          ]);
+          setNodes((nodesSnapshot) => [...nodesSnapshot, node]);
         }}
       />
     </div>

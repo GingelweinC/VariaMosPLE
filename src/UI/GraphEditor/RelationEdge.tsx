@@ -1,5 +1,3 @@
-import "./RelationEdge.css";
-
 import {
   BaseEdge,
   Edge,
@@ -74,8 +72,12 @@ export function convertRelationToEdge(
       relationType.style.sourceArrow.type === "arrow"
         ? {
             type: MarkerType.Arrow,
-            height: relationType.style.sourceArrow.height ?? 20,
-            width: relationType.style.sourceArrow.width ?? 20,
+            height:
+              relationType.style.sourceArrow.height ??
+              relationType.style.stroke.width * 5,
+            width:
+              relationType.style.sourceArrow.width ??
+              relationType.style.stroke.width * 5,
             color: relationType.style.stroke.color,
             strokeWidth: relationType.style.stroke.width,
           }
@@ -84,8 +86,12 @@ export function convertRelationToEdge(
       relationType.style.targetArrow.type === "arrow"
         ? {
             type: MarkerType.Arrow,
-            height: relationType.style.targetArrow.height ?? 20,
-            width: relationType.style.targetArrow.width ?? 20,
+            height:
+              relationType.style.sourceArrow.height ??
+              relationType.style.stroke.width * 5,
+            width:
+              relationType.style.sourceArrow.width ??
+              relationType.style.stroke.width * 5,
             color: relationType.style.stroke.color,
             strokeWidth: relationType.style.stroke.width,
           }

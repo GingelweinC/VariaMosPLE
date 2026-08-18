@@ -13,8 +13,25 @@
   flex: 1;
 }
 
-.full-node-handle {
-  height: 100%;
+div.full-node-handle {
   width: 100%;
-  opacity: 0;
+  height: 100%;
+  z-index: -10;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 0;
+  transform: none;
+  border: none;
+}
+
+div.full-node-handle-source {
+  z-index: 0;
+  background: rgba(0, 0, 0, 0);
+  box-shadow: 0px 0px 10px 2px rgb(0, 179, 255);
+}
+div.full-node-handle-target {
+  z-index: 0;
+  background: rgba(0, 0, 0, 0);
+  box-shadow: 0px 0px 10px 2px rgb(255, 81, 0);
 }

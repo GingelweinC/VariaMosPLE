@@ -7,10 +7,13 @@ import {
   NodeResizer,
   OnResize,
   Position,
+  useConnection,
   useReactFlow,
+  useUpdateNodeInternals,
 } from "@xyflow/react";
 import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
+import { useConnectionContext } from "./ConnectionContext";
 
 export type ElementNodeType = Node<
   {
@@ -26,6 +29,9 @@ export default function ElementNode({
   selected,
 }: NodeProps<ElementNodeType>): JSX.Element {
   const { updateNode } = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
+  const connection = useConnection();
+  const { currentRelationType } = useConnectionContext();
 
   const onResize: OnResize = useCallback(
     (_event, params) => {
@@ -57,6 +63,19 @@ export default function ElementNode({
     [id, updateNode],
   );
 
+  const isCurrentSource = connection.fromNode?.id === element.id;
+  const isPossibleSource =
+    !connection.inProgress &&
+    currentRelationType?.sources.some((source) => source.uuid === element.type);
+  const isPossibleTarget =
+    connection.inProgress &&
+    !isCurrentSource &&
+    currentRelationType?.targets.some((target) => target.uuid === element.type);
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, isPossibleTarget, isPossibleSource, updateNodeInternals]);
+
   return (
     <div
       className="element-node"
@@ -67,15 +86,25 @@ export default function ElementNode({
       }}
     >
       <Handle
-        className="full-node-handle"
+        className={
+          isPossibleSource || isCurrentSource
+            ? "full-node-handle full-node-handle-source"
+            : "full-node-handle"
+        }
         type="source"
-        position={Position.Right}
+        position={Position.Top}
       />
+
       <Handle
-        className="full-node-handle"
+        className={
+          isPossibleTarget
+            ? "full-node-handle full-node-handle-target"
+            : "full-node-handle"
+        }
         type="target"
-        position={Position.Left}
+        position={Position.Bottom}
       />
+
       <NodeResizer isVisible={selected} onResize={onResize} />
 
       <div className="element-node-title">{element.name}</div>
