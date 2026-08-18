@@ -79,7 +79,6 @@ export default function ReificationNode({
   const updateNodeInternals = useUpdateNodeInternals();
 
   useEffect(() => {
-    console.log(reification.endpoints);
     updateNodeInternals(id);
   }, [id, reification.endpoints, updateNodeInternals]);
 

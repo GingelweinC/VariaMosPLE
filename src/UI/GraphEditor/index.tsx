@@ -21,7 +21,10 @@ import {
 } from "@xyflow/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SideBar from "./SideBar";
-import ElementNode, {convertElementToNode, convertNodeToElement,} from "./ElementNode";
+import ElementNode, {
+  convertElementToNode,
+  convertNodeToElement,
+} from "./ElementNode";
 import ReificationNode, {
   convertReificationToNode,
   convertNodeToReification,
@@ -44,7 +47,11 @@ import { Relationship } from "../../Domain/ProductLineEngineering/Entities/Relat
 import ProjectService from "../../Application/Project/ProjectService";
 import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
-import { setUserIdle, setUserMovingCell, setUserResizingCell } from "../../DataProvider/Services/collab/collaborationAwarenessService";
+import {
+  setUserIdle,
+  setUserMovingCell,
+  setUserResizingCell,
+} from "../../DataProvider/Services/collab/collaborationAwarenessService";
 
 import AnnotationPanel from "../Annotation/AnnotationPanel";
 import HistoryPanel from "../HistoryProject/HistoryPanel";
@@ -56,7 +63,6 @@ import { GraphHeader } from "./GraphHeader";
 import { useAnnotationHandlers } from "./useAnnotation";
 import { useHistory } from "./useHistory";
 import { useModelSynchronization } from "./useModelSynchronization";
-
 
 export default function GraphEditor({
   projectService,
@@ -98,9 +104,7 @@ function GraphEditorContent({
     }>
   >([]);
 
-  const [model, setModel] = useState<Model>(
-    projectService.currentModel
-  );
+  const [model, setModel] = useState<Model>(projectService.currentModel);
 
   const annotationObserver = useRef<(() => void) | null>(null);
   const graphContainerRef = useRef<HTMLDivElement>(null);
@@ -145,37 +149,30 @@ function GraphEditorContent({
     annotationObserver,
   });
 
-  const {
-    revertHistoryItem,
-    loadProjectHistory,
-    openHistoryPanel,
-  } = useHistory({
-    projectService,
-    setModel,
-    syncModelChanges,
-    setHistoryRecords,
-    setShowHistoryPanel,
-  });
+  const { revertHistoryItem, loadProjectHistory, openHistoryPanel } =
+    useHistory({
+      projectService,
+      setModel,
+      syncModelChanges,
+      setHistoryRecords,
+      setShowHistoryPanel,
+    });
 
   const { screenToFlowPosition } = useReactFlow();
 
-  const {
-    awarenessStates,
-    collaborativeUsers,
-    updateCursor,
-    updateAction
-  } = useGraphAwareness({
-    projectService,
-    model,
-    collaborators,
-    isCollaborative,
-  });
+  const { awarenessStates, collaborativeUsers, updateCursor, updateAction } =
+    useGraphAwareness({
+      projectService,
+      model,
+      collaborators,
+      isCollaborative,
+    });
 
   const handleNodeResizeEnd = useCallback(
     (nodeId: string, width: number, height: number) => {
       const modelElement = projectService.findModelElementById(
         projectService.currentModel,
-        nodeId
+        nodeId,
       );
 
       if (!modelElement) {
@@ -187,15 +184,12 @@ function GraphEditorContent({
 
       projectService.raiseEventUpdatedElement(
         projectService.currentModel,
-        modelElement
+        modelElement,
       );
 
       setNodes((currentNodes) =>
         currentNodes.map((node) => {
-          if (
-            node.id !== nodeId ||
-            node.type !== "element"
-          ) {
+          if (node.id !== nodeId || node.type !== "element") {
             return node;
           }
 
@@ -213,7 +207,7 @@ function GraphEditorContent({
               },
             },
           };
-        })
+        }),
       );
 
       syncModelChanges();
@@ -225,7 +219,7 @@ function GraphEditorContent({
         setUserIdle(projectId, modelId);
       }
     },
-    [projectService, model?.id, syncModelChanges]
+    [projectService, model?.id, syncModelChanges],
   );
 
   useEffect(() => {
@@ -233,28 +227,23 @@ function GraphEditorContent({
   }, [loadAnnotations]);
 
   useEffect(() => {
-    if (
-      !projectService.currentModel ||
-      !projectService.currentLanguage
-    ) {
+    if (!projectService.currentModel || !projectService.currentLanguage) {
       return;
     }
 
     setNodes([
-      ...projectService.currentModel.elements.map(
-        (element) =>
-          convertElementToNode(
-            projectService.currentLanguage.Elements,
-            element,
-            handleNodeResizeEnd
-          )
+      ...projectService.currentModel.elements.map((element) =>
+        convertElementToNode(
+          projectService.currentLanguage.Elements,
+          element,
+          handleNodeResizeEnd,
+        ),
       ),
-      ...projectService.currentModel.reifications.map(
-        (reification) =>
-          convertReificationToNode(
-            projectService.currentLanguage.Reifications,
-            reification
-          )
+      ...projectService.currentModel.reifications.map((reification) =>
+        convertReificationToNode(
+          projectService.currentLanguage.Reifications,
+          reification,
+        ),
       ),
     ]);
     setEdges([
@@ -274,7 +263,11 @@ function GraphEditorContent({
         ),
       ),
     ]);
-  }, [projectService.currentLanguage, projectService.currentModel, handleNodeResizeEnd]);
+  }, [
+    projectService.currentLanguage,
+    projectService.currentModel,
+    handleNodeResizeEnd,
+  ]);
 
   const nodeTypes: NodeTypes = {
     element: ElementNode,
@@ -287,185 +280,163 @@ function GraphEditorContent({
   };
 
   const onNodesChange: OnNodesChange = useCallback(
-  (changes) => {
-    const projectId = projectService.getProject()?.id;
-    const modelId = model?.id;
+    (changes) => {
+      const projectId = projectService.getProject()?.id;
+      const modelId = model?.id;
 
-    const updatedNodes = applyNodeChanges(changes, nodes);
-    let modelChanged = false;
+      const updatedNodes = applyNodeChanges(changes, nodes);
+      let modelChanged = false;
 
-    changes.forEach((change) => {
-      if (change.type === "position") {
-        if (projectId && modelId) {
-          if (change.dragging) {
-            setUserMovingCell(
-              projectId,
-              modelId,
-              change.id,
-              change.position
-            );
-          } else {
-            setUserIdle(projectId, modelId);
+      changes.forEach((change) => {
+        if (change.type === "position") {
+          if (projectId && modelId) {
+            if (change.dragging) {
+              setUserMovingCell(projectId, modelId, change.id, change.position);
+            } else {
+              setUserIdle(projectId, modelId);
+            }
           }
-        }
 
-        const node = updatedNodes.find(
-          (currentNode) => currentNode.id === change.id
-        );
+          const node = updatedNodes.find(
+            (currentNode) => currentNode.id === change.id,
+          );
 
-        if (!node) {
+          if (!node) {
+            return;
+          }
+
+          if (node.type === "element") {
+            const element = convertNodeToElement(node);
+            const modelElement = projectService.findModelElementById(
+              projectService.currentModel,
+              element.id,
+            );
+
+            if (modelElement) {
+              Object.assign(modelElement, element);
+
+              projectService.raiseEventUpdatedElement(
+                projectService.currentModel,
+                modelElement,
+              );
+
+              modelChanged = true;
+            }
+          } else if (node.type === "reification") {
+            const reification = convertNodeToReification(node);
+
+            const modelReification =
+              projectService.currentModel.reifications.find(
+                (currentReification) =>
+                  currentReification.id === reification.id,
+              );
+
+            if (modelReification) {
+              Object.assign(modelReification, reification);
+              modelChanged = true;
+            }
+          }
+
           return;
         }
 
-        if (node.type === "element") {
+        if (change.type === "dimensions") {
+          if (projectId && modelId) {
+            if (change.resizing) {
+              setUserResizingCell(projectId, modelId, change.id, {
+                width: change.dimensions?.width ?? 0,
+                height: change.dimensions?.height ?? 0,
+              });
+            } else {
+              setUserIdle(projectId, modelId);
+            }
+          }
+
+          const node = updatedNodes.find(
+            (currentNode) => currentNode.id === change.id,
+          );
+
+          if (!node || node.type !== "element") {
+            return;
+          }
+
           const element = convertNodeToElement(node);
-          const modelElement =
-            projectService.findModelElementById(
-              projectService.currentModel,
-              element.id
-            );
+          const modelElement = projectService.findModelElementById(
+            projectService.currentModel,
+            element.id,
+          );
 
           if (modelElement) {
             Object.assign(modelElement, element);
 
             projectService.raiseEventUpdatedElement(
               projectService.currentModel,
-              modelElement
+              modelElement,
             );
 
             modelChanged = true;
           }
-        } else if (node.type === "reification") {
-          const reification = convertNodeToReification(node);
 
-          const modelReification =
-            projectService.currentModel.reifications.find(
-              (currentReification) =>
-                currentReification.id === reification.id
-            );
-
-          if (modelReification) {
-            Object.assign(modelReification, reification);
-            modelChanged = true;
-          }
-        }
-
-        return;
-      }
-
-      if (change.type === "dimensions") {
-        if (projectId && modelId) {
-          if (change.resizing) {
-            setUserResizingCell(
-              projectId,
-              modelId,
-              change.id,
-              {
-                width: change.dimensions?.width ?? 0,
-                height: change.dimensions?.height ?? 0,
-              }
-            );
-          } else {
-            setUserIdle(projectId, modelId);
-          }
-        }
-
-        const node = updatedNodes.find(
-          (currentNode) => currentNode.id === change.id
-        );
-
-        if (!node || node.type !== "element") {
           return;
         }
 
-        const element = convertNodeToElement(node);
-        const modelElement =
-          projectService.findModelElementById(
-            projectService.currentModel,
-            element.id
+        if (change.type === "remove") {
+          if (!projectId || !modelId) {
+            return;
+          }
+
+          const node = nodes.find(
+            (currentNode) => currentNode.id === change.id,
           );
 
-        if (modelElement) {
-          Object.assign(modelElement, element);
+          if (!node) {
+            return;
+          }
 
-          projectService.raiseEventUpdatedElement(
-            projectService.currentModel,
-            modelElement
-          );
+          if (node.type === "element") {
+            projectService.removeModelElementById(
+              projectService.currentModel,
+              node.id,
+            );
+          } else if (node.type === "reification") {
+            projectService.currentModel.reifications =
+              projectService.currentModel.reifications.filter(
+                (reification) => reification.id !== node.id,
+              );
+          }
 
           modelChanged = true;
-        }
+          setUserIdle(projectId, modelId);
 
-        return;
-      }
-
-      if (change.type === "remove") {
-        if (!projectId || !modelId) {
           return;
         }
 
-        const node = nodes.find(
-          (currentNode) => currentNode.id === change.id
-        );
-
-        if (!node) {
-          return;
+        if (change.type === "select") {
+          if (projectId && modelId) {
+            updateAction({
+              type: change.selected ? "selecting" : "idle",
+              cellId: change.id,
+              timestamp: new Date().toISOString(),
+            });
+          }
         }
+      });
 
-        if (node.type === "element") {
-          projectService.removeModelElementById(
-            projectService.currentModel,
-            node.id
-          );
-        } else if (node.type === "reification") {
-          projectService.currentModel.reifications =
-            projectService.currentModel.reifications.filter(
-              (reification) =>
-                reification.id !== node.id
-            );
-        }
+      setNodes(updatedNodes);
 
-        modelChanged = true;
-        setUserIdle(projectId, modelId);
-
-        return;
+      if (modelChanged) {
+        syncModelChanges();
       }
-
-      if (change.type === "select") {
-        if (projectId && modelId) {
-          updateAction({
-            type: change.selected ? "selecting" : "idle",
-            cellId: change.id,
-            timestamp: new Date().toISOString(),
-          });
-        }
-      }
-    });
-
-    setNodes(updatedNodes);
-
-    if (modelChanged) {
-      syncModelChanges();
-    }
-  },
-  [
-    nodes,
-    projectService,
-    model?.id,
-    syncModelChanges,
-    updateAction,
-  ]
-);
+    },
+    [nodes, projectService, model?.id, syncModelChanges, updateAction],
+  );
 
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
       let modelChanged = false;
 
       setEdges((edgesSnapshot) => {
-        const updatedEdges = applyEdgeChanges(
-          changes,
-          edgesSnapshot
-        );
+        const updatedEdges = applyEdgeChanges(changes, edgesSnapshot);
 
         changes.forEach((change) => {
           if (change.type !== "remove") {
@@ -473,7 +444,7 @@ function GraphEditorContent({
           }
 
           const edge = edgesSnapshot.find(
-            (currentEdge) => currentEdge.id === change.id
+            (currentEdge) => currentEdge.id === change.id,
           );
 
           if (!edge) {
@@ -482,7 +453,7 @@ function GraphEditorContent({
 
           projectService.removeModelRelationshipById(
             projectService.currentModel,
-            edge.id
+            edge.id,
           );
 
           modelChanged = true;
@@ -495,7 +466,7 @@ function GraphEditorContent({
         syncModelChanges();
       }
     },
-    [projectService, syncModelChanges]
+    [projectService, syncModelChanges],
   );
 
   const handleMouseMove = useCallback(
@@ -507,23 +478,20 @@ function GraphEditorContent({
 
       updateCursor(position.x, position.y);
     },
-    [screenToFlowPosition, updateCursor]
+    [screenToFlowPosition, updateCursor],
   );
 
   const onConnectStart: OnConnectStart = (event, params) => {
     const node = nodes.find((node) => node.id === params.nodeId);
-    console.log("START", node, params);
     if (node.type === "reification") {
       const reificationType = projectService.currentLanguage.Reifications.find(
         (reificationType) =>
           reificationType.uuid ===
           (node as ReificationNodeType).data.reification.typeId,
       );
-      console.log("REIFICATION TYPE", reificationType);
       const endpointType = reificationType.endpoints.find(
         (endpointType) => endpointType.uuid === params.handleId,
       );
-      console.log("ENDPOINT TYPE", endpointType);
       setCurrentEndpointType(endpointType);
     }
   };
@@ -552,7 +520,6 @@ function GraphEditorContent({
         projectService.currentLanguage.Relationships,
         newRelation,
       );
-      console.log(newRelation, newEdge);
       setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
       setCurrentRelationType(null);
     }
@@ -568,13 +535,11 @@ function GraphEditorContent({
         reification.endpoints.push(endpoint);
       }
       endpoint.elements.push(params.target);
-      console.log(endpoint);
       const newEdge = convertReificationEndpointToEdges(
         projectService.currentLanguage.Reifications,
         reification.id,
         endpoint,
       ).at(-1);
-      console.log(newEdge);
       setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
     }
   };
@@ -603,55 +568,45 @@ function GraphEditorContent({
           onConnectEnd={onConnectEnd}
           onMouseMove={handleMouseMove}
         >
-            <Background
-              variant={BackgroundVariant.Cross}
-              color="gray"
-            />
+          <Background variant={BackgroundVariant.Cross} color="gray" />
 
-            <Controls />
+          <Controls />
 
-            <MiniMap pannable />
+          <MiniMap pannable />
 
-            <GraphAwareness
-              currentUserName={
-                collaborators.find(
-                  (collaborator) =>
-                    collaborator.id ===
-                    projectService.getUser()
-                )?.name
-              }
-              awarenessStates={awarenessStates}
-              collaborativeUsers={collaborativeUsers}
-              modelId={model?.id ?? null}
-              nodes={nodes}
-              edges={edges}
-            />
+          <GraphAwareness
+            currentUserName={
+              collaborators.find(
+                (collaborator) => collaborator.id === projectService.getUser(),
+              )?.name
+            }
+            awarenessStates={awarenessStates}
+            collaborativeUsers={collaborativeUsers}
+            modelId={model?.id ?? null}
+            nodes={nodes}
+            edges={edges}
+          />
 
-            <AnnotationLayer
-              projectId={
-                projectService.getProject()?.id
-              }
-              modelId={model?.id}
-              projectService={projectService}
-              annotations={
-                model
-                  ? annotationRecords.filter(
-                      (item) =>
-                        item.modelId === model.id ||
-                        item.model_id === model.id
-                    )
-                  : []
-              }
-              pendingAnnotation={pendingAnnotation}
-              onCreate={saveAnnotation}
-              onUpdate={updateAnnotation}
-              onDelete={deleteAnnotation}
-              onResolve={resolveAnnotation}
-              onUnresolve={unresolveAnnotation}
-              onCancelPending={() =>
-                setPendingAnnotation(null)
-              }
-            />
+          <AnnotationLayer
+            projectId={projectService.getProject()?.id}
+            modelId={model?.id}
+            projectService={projectService}
+            annotations={
+              model
+                ? annotationRecords.filter(
+                    (item) =>
+                      item.modelId === model.id || item.model_id === model.id,
+                  )
+                : []
+            }
+            pendingAnnotation={pendingAnnotation}
+            onCreate={saveAnnotation}
+            onUpdate={updateAnnotation}
+            onDelete={deleteAnnotation}
+            onResolve={resolveAnnotation}
+            onUnresolve={unresolveAnnotation}
+            onCancelPending={() => setPendingAnnotation(null)}
+          />
         </ReactFlow>
       </div>
       <SideBar
@@ -662,7 +617,7 @@ function GraphEditorContent({
           const node = convertElementToNode(
             projectService.currentLanguage.Elements,
             element,
-            handleNodeResizeEnd
+            handleNodeResizeEnd,
           );
 
           projectService.currentModel.elements.push(element);
@@ -684,34 +639,30 @@ function GraphEditorContent({
 
           setNodes((nodesSnapshot) => [...nodesSnapshot, node]);
         }}
-        />
-  
-        <HistoryPanel
-          show={showHistoryPanel}
-          onHide={() => setShowHistoryPanel(false)}
-          projectService={projectService}
-          historyRecords={historyRecords}
-          selectedModelId={
-            projectService.currentModel?.id
-          }
-          onRefresh={loadProjectHistory}
-          onRevertHistoryItem={revertHistoryItem}
-        />
+      />
 
-        <AnnotationPanel
-          show={showAnnotationPanel}
-          onHide={closeAnnotationPanel}
-          annotations={annotationRecords}
-          currentUser={{
-            id: projectService.getUser(),
-            name:
-              collaborators.find(
-                (collaborator) =>
-                  collaborator.id ===
-                  projectService.getUser()
-              )?.name || "User",
-          }}
-        />
-      </div>
+      <HistoryPanel
+        show={showHistoryPanel}
+        onHide={() => setShowHistoryPanel(false)}
+        projectService={projectService}
+        historyRecords={historyRecords}
+        selectedModelId={projectService.currentModel?.id}
+        onRefresh={loadProjectHistory}
+        onRevertHistoryItem={revertHistoryItem}
+      />
+
+      <AnnotationPanel
+        show={showAnnotationPanel}
+        onHide={closeAnnotationPanel}
+        annotations={annotationRecords}
+        currentUser={{
+          id: projectService.getUser(),
+          name:
+            collaborators.find(
+              (collaborator) => collaborator.id === projectService.getUser(),
+            )?.name || "User",
+        }}
+      />
+    </div>
   );
 }
