@@ -16,6 +16,8 @@ import {
   OnConnect,
   NodeTypes,
   EdgeTypes,
+  OnConnectStart,
+  OnConnectEnd,
 } from "@xyflow/react";
 import SideBar from "./SideBar";
 import { useCallback, useEffect, useState } from "react";
@@ -27,6 +29,7 @@ import ProjectService from "../../Application/Project/ProjectService";
 import ReificationNode, {
   convertReificationToNode,
   convertNodeToReification,
+  ReificationNodeType,
 } from "./ReificationNode";
 import RelationEdge, { convertRelationToEdge } from "./RelationEdge";
 import {
@@ -34,8 +37,13 @@ import {
   useConnectionContext,
 } from "./ConnectionContext";
 import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
-import { Reification } from "../../Domain/ProductLineEngineering/Entities/Reification";
-import ReificationEndpointEdge from "./ReificationEndpointEdge";
+import {
+  Endpoint,
+  Reification,
+} from "../../Domain/ProductLineEngineering/Entities/Reification";
+import ReificationEndpointEdge, {
+  convertReificationEndpointToEdges,
+} from "./ReificationEndpointEdge";
 import { Relationship } from "../../Domain/ProductLineEngineering/Entities/Relationship";
 
 export default function GraphEditor({
@@ -58,8 +66,12 @@ function GraphEditorContent({
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
-  const { currentRelationType, setCurrentRelationType } =
-    useConnectionContext();
+  const {
+    currentRelationType,
+    setCurrentRelationType,
+    currentEndpointType,
+    setCurrentEndpointType,
+  } = useConnectionContext();
 
   useEffect(() => {
     setNodes([
@@ -73,14 +85,23 @@ function GraphEditorContent({
         ),
       ),
     ]);
-    setEdges(
-      projectService.currentModel.relationships.map((relation) =>
+    setEdges([
+      ...projectService.currentModel.relationships.map((relation) =>
         convertRelationToEdge(
           projectService.currentLanguage.Relationships,
           relation,
         ),
       ),
-    );
+      ...projectService.currentModel.reifications.flatMap((reification) =>
+        reification.endpoints.flatMap((endpoint) =>
+          convertReificationEndpointToEdges(
+            projectService.currentLanguage.Reifications,
+            reification.id,
+            endpoint,
+          ),
+        ),
+      ),
+    ]);
   }, [projectService.currentLanguage, projectService.currentModel]);
 
   const nodeTypes: NodeTypes = {
@@ -156,6 +177,31 @@ function GraphEditorContent({
     [],
   );
 
+  const onConnectStart: OnConnectStart = (event, params) => {
+    const node = nodes.find((node) => node.id === params.nodeId);
+    console.log("START", node, params);
+    if (node.type === "reification") {
+      const reificationType = projectService.currentLanguage.Reifications.find(
+        (reificationType) =>
+          reificationType.uuid ===
+          (node as ReificationNodeType).data.reification.typeId,
+      );
+      console.log("REIFICATION TYPE", reificationType);
+      const endpointType = reificationType.endpoints.find(
+        (endpointType) => endpointType.uuid === params.handleId,
+      );
+      console.log("ENDPOINT TYPE", endpointType);
+      setCurrentEndpointType(endpointType);
+    }
+  };
+
+  const onConnectEnd: OnConnectEnd = (event, connectionState) => {
+    const node = nodes.find((node) => node.id === connectionState.fromNode.id);
+    if (node.type === "reificationEndpoint") {
+      setCurrentEndpointType(null);
+    }
+  };
+
   const onConnect: OnConnect = (params) => {
     if (currentRelationType !== null) {
       const newRelation = new Relationship(
@@ -177,6 +223,27 @@ function GraphEditorContent({
       setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
       setCurrentRelationType(null);
     }
+    if (currentEndpointType) {
+      let reification = projectService.currentModel.reifications.find(
+        (reification) => reification.id === params.source,
+      );
+      let endpoint = reification.endpoints.find(
+        (endpoint) => endpoint.id === params.sourceHandle,
+      );
+      if (!endpoint) {
+        endpoint = new Endpoint(currentEndpointType.id, []);
+        reification.endpoints.push(endpoint);
+      }
+      endpoint.elements.push(params.target);
+      console.log(endpoint);
+      const newEdge = convertReificationEndpointToEdges(
+        projectService.currentLanguage.Reifications,
+        reification.id,
+        endpoint,
+      ).at(-1);
+      console.log(newEdge);
+      setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
+    }
   };
 
   return (
@@ -193,6 +260,8 @@ function GraphEditorContent({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onConnectStart={onConnectStart}
+          onConnectEnd={onConnectEnd}
         >
           <Background variant={BackgroundVariant.Cross} color="gray" />
           <Controls />

@@ -31,7 +31,7 @@ export default function ElementNode({
   const { updateNode } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const connection = useConnection();
-  const { currentRelationType } = useConnectionContext();
+  const { currentRelationType, currentEndpointType } = useConnectionContext();
 
   const onResize: OnResize = useCallback(
     (_event, params) => {
@@ -70,7 +70,12 @@ export default function ElementNode({
   const isPossibleTarget =
     connection.inProgress &&
     !isCurrentSource &&
-    currentRelationType?.targets.some((target) => target.uuid === element.type);
+    (currentRelationType?.targets.some(
+      (target) => target.uuid === element.type,
+    ) ||
+      currentEndpointType?.elementTypes.some(
+        (elementType) => elementType.uuid === element.type,
+      ));
 
   useEffect(() => {
     updateNodeInternals(id);

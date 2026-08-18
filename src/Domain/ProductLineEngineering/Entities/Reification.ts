@@ -1,10 +1,22 @@
 import { Property } from "./Property";
 
+export class Endpoint {
+  // related to the reificationType endpoints
+  id: string;
+  // list of the elements the endpoint is connected to
+  elements: string[];
+
+  constructor(id: string, elements?: string[]) {
+    this.id = id;
+    this.elements = elements;
+  }
+}
+
 export class Reification {
   id: string = crypto.randomUUID();
   name: string;
   typeId: string;
-  endpoints: any[] = [];
+  endpoints: Endpoint[] = [];
   properties: Property[];
   x: number = 0;
   y: number = 0;
@@ -15,7 +27,7 @@ export class Reification {
     name: string,
     typeId: string,
     properties: Property[] = [],
-    endpoints: any[] = [],
+    endpoints: Endpoint[] = [],
     parentId: string = null,
   ) {
     this.name = name;

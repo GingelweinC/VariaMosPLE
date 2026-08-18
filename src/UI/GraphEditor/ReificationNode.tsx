@@ -8,8 +8,9 @@ import {
   OnResize,
   Position,
   useReactFlow,
+  useUpdateNodeInternals,
 } from "@xyflow/react";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { Reification } from "../../Domain/ProductLineEngineering/Entities/Reification";
 
 export type ReificationNodeType = Node<
@@ -75,6 +76,13 @@ export default function ReificationNode({
     [id, updateNode],
   );
 
+  const updateNodeInternals = useUpdateNodeInternals();
+
+  useEffect(() => {
+    console.log(reification.endpoints);
+    updateNodeInternals(id);
+  }, [id, reification.endpoints, updateNodeInternals]);
+
   return (
     <div
       className="reification-node"
@@ -86,10 +94,12 @@ export default function ReificationNode({
     >
       {reification.endpoints.map((endpoint, index) => (
         <Handle
-          key={endpoint.uuid}
-          id={endpoint.uuid}
+          key={endpoint.id}
+          id={endpoint.id}
           type="source"
           position={generatePosition(index)}
+          isConnectableEnd={false}
+          isConnectableStart={true}
         />
       ))}
 
