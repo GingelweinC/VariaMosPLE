@@ -7,6 +7,7 @@ import FloatingChat from "./Chatbot/FloatingChat";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
 import UvlEditor from "../UvlEditor/UvlEditor";
 import GraphEditor from "../GraphEditor";
+import { ReactFlowProvider } from '@xyflow/react';
 
 interface ModelRendererProps {
     projectService: ProjectService;
@@ -75,7 +76,11 @@ if (selectedModel.type === "Feature model UVL") {
     </td>,
   ];
 } else {
-  return <GraphEditor projectService={this.props.projectService} />;
+  return(
+    <ReactFlowProvider>
+      <GraphEditor projectService={this.props.projectService} />;
+    </ReactFlowProvider>
+  )
 }
 }
 
