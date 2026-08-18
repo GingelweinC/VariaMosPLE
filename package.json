@@ -25,6 +25,7 @@
     "buffer": "^6.0.3",
     "fs": "^0.0.1-security",
     "gapi-script": "^1.2.0",
+    "html-to-image": "^1.11.11",
     "immer": "^9.0.12",
     "mxgraph": "^4.2.2",
     "os": "^0.1.2",
