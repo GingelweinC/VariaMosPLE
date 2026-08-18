@@ -1543,8 +1543,6 @@ class TreeMenu extends Component<Props, State> {
     if (this.state.optionAllowDelete) {
       items.push(<Dropdown.Item href="#" onClick={this.showDeleteModal} id="deleteItem">Delete</Dropdown.Item>);
     }
-    console.log("Rendering language options for new model creation");
-    console.log("Available languages:", this.props.projectService.languages);
     if (this.state.optionAllowModelEnable) {
       let children = [];
       for (let i = 0; i < this.props.projectService.languages.length; i++) {

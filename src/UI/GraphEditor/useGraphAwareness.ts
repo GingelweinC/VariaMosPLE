@@ -80,8 +80,6 @@ export function useGraphAwareness({
       state => {
         const states = Array.from(state.values());
 
-        console.log("AWARNESS CHANGE", states);
-
         const collaborativeUsers = states
           .filter((userState: any) => {
             if (!userState.user) {
@@ -101,9 +99,6 @@ export function useGraphAwareness({
             action: userState.user.action,
             modelId: userState.user.modelId,
           }));
-
-        console.log("awarenessStates", states);
-        console.log("collaborativeUsers", collaborativeUsers);
 
         setAwarenessStates(states);
         setCollaborativeUsers(collaborativeUsers);
