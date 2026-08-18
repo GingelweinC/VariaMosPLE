@@ -12,3 +12,8 @@
   font-weight: bold;
   text-overflow: ellipsis;
 }
+
+.reification-handle {
+  height: 15px;
+  width: 15px;
+}

@@ -96,6 +96,7 @@ export default function ReificationNode({
           key={endpoint.id}
           id={endpoint.id}
           type="source"
+          className="reification-handle"
           position={generatePosition(index)}
           isConnectableEnd={false}
           isConnectableStart={true}
