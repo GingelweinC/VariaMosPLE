@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Edge, Node } from "@xyflow/react";
 import ProjectService from "../../Application/Project/ProjectService";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
@@ -19,6 +19,11 @@ interface UseModelSynchronizationProps {
   setModel: React.Dispatch<React.SetStateAction<Model>>;
 }
 
+type ModelSnapshot = {
+  elements: any[];
+  relationships: any[];
+};
+
 export function useModelSynchronization({
   projectService,
   model,
@@ -29,19 +34,18 @@ export function useModelSynchronization({
   isCollaborative,
   setModel,
 }: UseModelSynchronizationProps) {
-  const [isRemoteChange, setIsRemoteChange] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
-  const isRemoteChangeRef = useRef(isRemoteChange);
-  const isInitialLoadRef = useRef(isInitialLoad);
+
+  const isRemoteChangeRef = useRef(false);
+  const isHydratedRef = useRef(false);
 
   const incrementalUpdaters = useRef(
-    new Map<string, IncrementalGraphUpdater>()
+    new Map<string, IncrementalGraphUpdater>(),
   );
-  const modelSnapshots = useRef(
-    new Map<string, { elements: any[]; relationships: any[] }>()
-  );
+
+  const modelSnapshots = useRef(new Map<string, ModelSnapshot>());
+
   const currentModelObserver = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -52,13 +56,35 @@ export function useModelSynchronization({
     edgesRef.current = edges;
   }, [edges]);
 
-  useEffect(() => {
-    isRemoteChangeRef.current = isRemoteChange;
-  }, [isRemoteChange]);
+  const getModelKey = useCallback((currentModel: Model) => {
+    return `${currentModel.type}_${currentModel.id}`;
+  }, []);
 
-  useEffect(() => {
-    isInitialLoadRef.current = isInitialLoad;
-  }, [isInitialLoad]);
+  const cloneSnapshot = useCallback((currentModel: Model): ModelSnapshot => {
+    return {
+      elements: structuredClone(currentModel.elements ?? []),
+      relationships: structuredClone(currentModel.relationships ?? []),
+    };
+  }, []);
+
+  const cleanupUnusedModelResources = useCallback(
+    (currentModel: Model) => {
+      const currentModelKey = getModelKey(currentModel);
+
+      for (const key of incrementalUpdaters.current.keys()) {
+        if (key !== currentModelKey) {
+          incrementalUpdaters.current.delete(key);
+        }
+      }
+
+      for (const key of modelSnapshots.current.keys()) {
+        if (key !== currentModelKey) {
+          modelSnapshots.current.delete(key);
+        }
+      }
+    },
+    [getModelKey],
+  );
 
   const syncModelChanges = useCallback(() => {
     const currentModel = projectService.currentModel;
@@ -69,7 +95,7 @@ export function useModelSynchronization({
       !projectId ||
       !currentModel ||
       isRemoteChangeRef.current ||
-      isInitialLoadRef.current
+      !isHydratedRef.current
     ) {
       return;
     }
@@ -79,22 +105,25 @@ export function useModelSynchronization({
       currentModel.id,
       (state) => {
         state.set("data", {
-          elements: currentModel.elements,
-          relationships: currentModel.relationships,
+          elements: structuredClone(currentModel.elements ?? []),
+          relationships: structuredClone(
+            currentModel.relationships ?? [],
+          ),
           timestamp: Date.now(),
         });
-      }
+      },
     );
 
-    const modelKey = `${currentModel.type}_${currentModel.id}`;
-
-    modelSnapshots.current.set(modelKey, {
-      elements: JSON.parse(JSON.stringify(currentModel.elements)),
-      relationships: JSON.parse(
-        JSON.stringify(currentModel.relationships)
-      ),
-    });
-  }, [projectService, isCollaborative]);
+    modelSnapshots.current.set(
+      getModelKey(currentModel),
+      cloneSnapshot(currentModel),
+    );
+  }, [
+    projectService,
+    isCollaborative,
+    getModelKey,
+    cloneSnapshot,
+  ]);
 
   useEffect(() => {
     const currentModel = projectService.currentModel;
@@ -112,25 +141,12 @@ export function useModelSynchronization({
     currentModelObserver.current?.();
     currentModelObserver.current = null;
 
-    const cleanupUnusedModelResources = () => {
-      const currentModelKey = `${currentModel.type}_${currentModel.id}`;
+    cleanupUnusedModelResources(currentModel);
 
-      for (const key of incrementalUpdaters.current.keys()) {
-        if (key !== currentModelKey) {
-          incrementalUpdaters.current.delete(key);
-        }
-      }
+    const modelKey = getModelKey(currentModel);
 
-      for (const key of modelSnapshots.current.keys()) {
-        if (key !== currentModelKey) {
-          modelSnapshots.current.delete(key);
-        }
-      }
-    };
-
-    cleanupUnusedModelResources();
-
-    const modelKey = `${currentModel.type}_${currentModel.id}`;
+    isHydratedRef.current = false;
+    isRemoteChangeRef.current = false;
 
     if (!incrementalUpdaters.current.has(modelKey)) {
       incrementalUpdaters.current.set(
@@ -148,146 +164,248 @@ export function useModelSynchronization({
             }) => {
               if (nodesToDelete?.length) {
                 const nodeIds = new Set(
-                  nodesToDelete.map((node) => node.id)
+                  nodesToDelete.map((node) => node.id),
                 );
 
                 setNodes((currentNodes) =>
                   currentNodes.filter(
-                    (node) => !nodeIds.has(node.id)
-                  )
+                    (node) => !nodeIds.has(node.id),
+                  ),
                 );
               }
 
               if (edgesToDelete?.length) {
                 const edgeIds = new Set(
-                  edgesToDelete.map((edge) => edge.id)
+                  edgesToDelete.map((edge) => edge.id),
                 );
 
                 setEdges((currentEdges) =>
                   currentEdges.filter(
-                    (edge) => !edgeIds.has(edge.id)
-                  )
+                    (edge) => !edgeIds.has(edge.id),
+                  ),
                 );
               }
             },
 
             getNode: (id: string) =>
-              nodesRef.current.find((node) => node.id === id) || null,
+              nodesRef.current.find((node) => node.id === id) ?? null,
 
             getEdge: (id: string) =>
-              edgesRef.current.find((edge) => edge.id === id) || null,
+              edgesRef.current.find((edge) => edge.id === id) ?? null,
           } as any,
-          projectService
-        )
+          projectService,
+        ),
       );
     }
 
-    setModel(currentModel);
-    if (projectService.currentModel) {
-        setIsInitialLoad(true);
+    const updater = incrementalUpdaters.current.get(modelKey);
 
-    currentModelObserver.current =
-      projectService.observeModelState(
-        projectId,
-        currentModel.id,
-        (state) => {
-          if (
-            !state ||
-            !projectService.currentModel ||
-            projectService.currentModel.id !== currentModel.id ||
-            isInitialLoadRef.current
-          ) {
-            return;
-          }
+    const hydrateFromSharedState = (modelData: any) => {
+      const sharedElements = structuredClone(
+        modelData?.elements ?? [],
+      );
+      const sharedRelationships = structuredClone(
+        modelData?.relationships ?? [],
+      );
 
-          setIsRemoteChange(true);
+      const localSnapshot = modelSnapshots.current.get(modelKey) ??
+        cloneSnapshot(currentModel);
+
+      const snapshotAsModel = {
+        ...currentModel,
+        elements: localSnapshot.elements,
+        relationships: localSnapshot.relationships,
+      };
+
+      const diff = calculateModelDiff(
+        snapshotAsModel,
+        {
+          ...currentModel,
+          elements: sharedElements,
+          relationships: sharedRelationships,
+        },
+      );
+
+      currentModel.elements = sharedElements;
+      currentModel.relationships = sharedRelationships;
+
+      setModel({
+        ...currentModel,
+        elements: sharedElements,
+        relationships: sharedRelationships,
+      });
+
+      if (updater && hasMeaningfulChanges(diff)) {
+        updater.applyIncrementalChanges(
+          currentModel,
+          diff,
+        );
+      }
+
+      modelSnapshots.current.set(modelKey, {
+        elements: structuredClone(sharedElements),
+        relationships: structuredClone(sharedRelationships),
+      });
+
+      isHydratedRef.current = true;
+    };
+
+    const observer = projectService.observeModelState(
+      projectId,
+      currentModel.id,
+      (state) => {
+        if (
+          !state ||
+          !projectService.currentModel ||
+          projectService.currentModel.id !== currentModel.id
+        ) {
+          return;
+        }
+
+        const modelData = state.get("data");
+
+        if (!modelData) {
+          return;
+        }
+
+        if (!isHydratedRef.current) {
           isRemoteChangeRef.current = true;
 
           try {
-            const modelData = state.get("data");
-
-            if (!modelData || !projectService.currentModel) {
-              return;
-            }
-
-            const currentModel =
-              projectService.currentModel;
-
-            const currentModelKey =
-              `${currentModel.type}_${currentModel.id}`;
-
-            if (!modelSnapshots.current.has(currentModelKey)) {
-              modelSnapshots.current.set(currentModelKey, {
-                elements: JSON.parse(
-                  JSON.stringify(currentModel.elements || [])
-                ),
-                relationships: JSON.parse(
-                  JSON.stringify(currentModel.relationships || [])
-                ),
-              });
-            }
-
-            const snapshot =
-              modelSnapshots.current.get(currentModelKey);
-
-            if (!snapshot) {
-              return;
-            }
-
-            const snapshotAsModel = {
-              ...currentModel,
-              elements: snapshot.elements,
-              relationships: snapshot.relationships,
-            };
-
-            const diff = calculateModelDiff(
-              snapshotAsModel,
-              modelData
-            );
-
-            if (!hasMeaningfulChanges(diff)) {
-              return;
-            }
-
-            currentModel.elements =
-              modelData.elements || currentModel.elements;
-
-            currentModel.relationships =
-              modelData.relationships || currentModel.relationships;
-
-            const updater =
-              incrementalUpdaters.current.get(
-                currentModelKey
-              );
-
-            if (updater) {
-              updater.applyIncrementalChanges(
-                currentModel,
-                diff
-              );
-            }
-
-            modelSnapshots.current.set(currentModelKey, {
-              elements: JSON.parse(
-                JSON.stringify(currentModel.elements)
-              ),
-              relationships: JSON.parse(
-                JSON.stringify(currentModel.relationships)
-              ),
-            });
+            hydrateFromSharedState(modelData);
           } finally {
-            setIsRemoteChange(false);
             isRemoteChangeRef.current = false;
           }
-        }
-      );
 
-      setIsInitialLoad(false);
-    }
+          return;
+        }
+
+        isRemoteChangeRef.current = true;
+
+        try {
+          const currentModel = projectService.currentModel;
+
+          if (!currentModel) {
+            return;
+          }
+
+          const currentModelKey = getModelKey(currentModel);
+          const snapshot =
+            modelSnapshots.current.get(currentModelKey);
+
+          if (!snapshot) {
+            modelSnapshots.current.set(
+              currentModelKey,
+              cloneSnapshot(currentModel),
+            );
+            return;
+          }
+
+          const snapshotAsModel = {
+            ...currentModel,
+            elements: snapshot.elements,
+            relationships: snapshot.relationships,
+          };
+
+          const diff = calculateModelDiff(
+            snapshotAsModel,
+            modelData,
+          );
+
+          if (!hasMeaningfulChanges(diff)) {
+            return;
+          }
+
+          currentModel.elements =
+            structuredClone(
+              modelData.elements ??
+                currentModel.elements ??
+                [],
+            );
+
+          currentModel.relationships =
+            structuredClone(
+              modelData.relationships ??
+                currentModel.relationships ??
+                [],
+            );
+
+          setModel({
+            ...currentModel,
+            elements: currentModel.elements,
+            relationships: currentModel.relationships,
+          });
+
+          const currentUpdater =
+            incrementalUpdaters.current.get(
+              currentModelKey,
+            );
+
+          if (currentUpdater) {
+            currentUpdater.applyIncrementalChanges(
+              currentModel,
+              diff,
+            );
+          }
+
+          modelSnapshots.current.set(
+            currentModelKey,
+            cloneSnapshot(currentModel),
+          );
+        } finally {
+          isRemoteChangeRef.current = false;
+        }
+      },
+    );
+
+    currentModelObserver.current = observer;
+
+    const localSnapshot = cloneSnapshot(currentModel);
+
+    modelSnapshots.current.set(modelKey, localSnapshot);
+
+    /*
+     * Important:
+     * updateModelState is used here only to access the current shared state.
+     * If shared data already exists, it wins over the local model.
+     * If no shared data exists, the local model is published once.
+     */
+    projectService.updateModelState(
+      projectId,
+      currentModel.id,
+      (state) => {
+        const sharedData = state.get("data");
+
+        if (sharedData) {
+          hydrateFromSharedState(sharedData);
+          return;
+        }
+
+        state.set("data", {
+          elements: structuredClone(
+            currentModel.elements ?? [],
+          ),
+          relationships: structuredClone(
+            currentModel.relationships ?? [],
+          ),
+          timestamp: Date.now(),
+        });
+
+        modelSnapshots.current.set(
+          modelKey,
+          cloneSnapshot(currentModel),
+        );
+
+        isHydratedRef.current = true;
+      },
+    );
 
     return () => {
       currentModelObserver.current?.();
       currentModelObserver.current = null;
+
+      isHydratedRef.current = false;
+      isRemoteChangeRef.current = false;
     };
   }, [
     projectService,
@@ -295,7 +413,9 @@ export function useModelSynchronization({
     setModel,
     setNodes,
     setEdges,
-    setIsRemoteChange,
+    cleanupUnusedModelResources,
+    getModelKey,
+    cloneSnapshot,
   ]);
 
   return {
