@@ -16,7 +16,7 @@ import { TabContainer, TabContent, TabPane } from "react-bootstrap";
 import ProjectService from "../../Application/Project/ProjectService";
 import { Query } from "../../Domain/ProductLineEngineering/Entities/Query";
 import { runQuery } from "../../Domain/ProductLineEngineering/UseCases/QueryUseCases";
-import QueryBuilder from "./queryBuilder";
+import QueryBuilder from "../ReasoningPanel/QueryBuilderModal";
 import QueryResult from "./queryResult";
 
 type QueryModalProps = {
@@ -28,6 +28,8 @@ export default function QueryModal({
   handleCloseCallback,
   projectService,
 }: Readonly<QueryModalProps>) {
+  const [showQueryBuilder, setShowQueryBuilder] = useState<boolean>(false);
+
   const [key, setKey] = useState("query");
   const [translatorEndpoint, setTranslatorEndpoint] = useState(
     "https://app.variamos.com/semantic_translator/query",
@@ -190,13 +192,7 @@ export default function QueryModal({
             </Form>
           </TabPane>
           {/* New tab for constructing the query */}
-          <TabPane eventKey="construct" title="Construct Query">
-            <QueryBuilder
-              projectService={projectService}
-              setQuery={setQuery}
-              setKey={setKey}
-            />
-          </TabPane>
+          <TabPane eventKey="construct" title="Construct Query"></TabPane>
           {/* Tab for showing the results of the query */}
           <TabPane
             eventKey="results"
