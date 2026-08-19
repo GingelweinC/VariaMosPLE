@@ -11,7 +11,9 @@ import { ModelDiff } from "../../DataProvider/Services/incrementalSyncService";
 import ProjectService from "../../Application/Project/ProjectService";
 import { convertElementToNode } from "./ElementNode";
 import { convertRelationToEdge } from './RelationEdge';
-
+import { Reification } from "../../Domain/ProductLineEngineering/Entities/Reification";
+import { convertReificationToNode } from "./ReificationNode";
+import { convertReificationEndpointToEdges } from "./ReificationEndpointEdge";
 export class IncrementalGraphUpdater {
   private reactFlow: ReactFlowInstance;
   private projectService: ProjectService;
@@ -31,59 +33,62 @@ export class IncrementalGraphUpdater {
    * Applique les changements incrémentaux au graphe.
    */
   public applyIncrementalChanges(
-    model: Model,
-    diff: ModelDiff,
-  ): void {
-    if (!this.reactFlow) {
-      return;
-    }
-
-    this.updateMaps();
-
-    // Suppress elements
-    if (diff.elementsRemoved.length > 0) {
-      this.removeElements(diff.elementsRemoved);
-    }
-
-    // Suppress relationships
-    if (diff.relationshipsRemoved.length > 0) {
-      this.removeRelationships(diff.relationshipsRemoved);
-    }
-
-    // Add elements
-    if (diff.elementsAdded.length > 0) {
-      this.addElements(
-        model,
-        diff.elementsAdded,
-      );
-    }
-
-    // Update elements
-    if (diff.elementsUpdated.length > 0) {
-      this.updateElements(
-        model,
-        diff.elementsUpdated,
-      );
-    }
-
-    // Add relationships
-    if (diff.relationshipsAdded.length > 0) {
-      this.addRelationships(
-        model,
-        diff.relationshipsAdded,
-      );
-    }
-
-    // Update relationships
-    if (diff.relationshipsUpdated.length > 0) {
-      this.updateRelationships(
-        model,
-        diff.relationshipsUpdated,
-      );
-    }
-
-    this.updateMaps();
+  model: Model,
+  diff: ModelDiff,
+): void {
+  if (!this.reactFlow) {
+    return;
   }
+
+  this.updateMaps();
+
+  // Suppress elements
+  if (diff.elementsRemoved.length > 0) {
+    this.removeElements(diff.elementsRemoved);
+  }
+
+  // Suppress reifications
+  if (diff.reificationsRemoved.length > 0) {
+    this.removeReifications(diff.reificationsRemoved);
+  }
+
+  // Suppress relationships
+  if (diff.relationshipsRemoved.length > 0) {
+    this.removeRelationships(diff.relationshipsRemoved);
+  }
+
+  // Add elements
+  if (diff.elementsAdded.length > 0) {
+    this.addElements(model, diff.elementsAdded);
+  }
+
+  // Add reifications
+  if (diff.reificationsAdded.length > 0) {
+    this.addReifications(model, diff.reificationsAdded);
+  }
+
+  // Update elements
+  if (diff.elementsUpdated.length > 0) {
+    this.updateElements(model, diff.elementsUpdated);
+  }
+
+  // Update reifications
+  if (diff.reificationsUpdated.length > 0) {
+    this.updateReifications(model, diff.reificationsUpdated);
+  }
+
+  // Add relationships
+  if (diff.relationshipsAdded.length > 0) {
+    this.addRelationships(model, diff.relationshipsAdded);
+  }
+
+  // Update relationships
+  if (diff.relationshipsUpdated.length > 0) {
+    this.updateRelationships(model, diff.relationshipsUpdated);
+  }
+
+  this.updateMaps();
+}
 
   /**
    * Updates internal maps of nodes and edges for quick access.
@@ -111,7 +116,37 @@ export class IncrementalGraphUpdater {
     const ids = new Set(elementIds);
 
     const nodesToDelete = Object.values(this.nodes)
-      .filter(node => ids.has(node.id));
+      .filter(
+        node =>
+          node.type === "element" &&
+          ids.has(node.id),
+      );
+
+    if (nodesToDelete.length === 0) {
+      return;
+    }
+
+    this.reactFlow.deleteElements({
+      nodes: nodesToDelete,
+    });
+
+    nodesToDelete.forEach(node => {
+      delete this.nodes[node.id];
+    });
+  }
+
+  /**
+   * Suppress reifications
+   */
+    private removeReifications(reificationIds: string[]): void {
+    const ids = new Set(reificationIds);
+
+    const nodesToDelete = Object.values(this.nodes)
+      .filter(
+        node =>
+          node.type === "reification" &&
+          ids.has(node.id),
+      );
 
     if (nodesToDelete.length === 0) {
       return;
@@ -164,7 +199,7 @@ export class IncrementalGraphUpdater {
     const newNodes: Node[] = [];
 
     elements.forEach(element => {
-      const node = this.createNode(
+      const node = this.createElementNode(
         this.projectService.currentLanguage.Elements,
         element,
       );
@@ -234,28 +269,164 @@ export class IncrementalGraphUpdater {
         return updatedNode;
       })
     );
+  }
+
+  /**
+   * Update existing reifications
+   */
+private updateReifications(
+  model: Model,
+  reifications: Reification[],
+): void {
+  const reificationsById = new Map(
+    reifications.map((reification) => [
+      reification.id,
+      reification,
+    ]),
+  );
+
+  // Update nodes
+  this.reactFlow.setNodes((currentNodes) =>
+    currentNodes.map((node) => {
+      if (node.type !== "reification") {
+        return node;
+      }
+
+      const reification = reificationsById.get(node.id);
+
+      if (!reification) {
+        return node;
+      }
+
+      const updatedNode: Node = {
+        ...node,
+        width: reification.width,
+        height: reification.height,
+        position: {
+          x: reification.x,
+          y: reification.y,
+        },
+        data: {
+          ...node.data,
+          reification,
+        },
+      };
+
+      this.nodes[updatedNode.id] = updatedNode;
+
+      return updatedNode;
+    }),
+  );
+
+  // Update reification endpoint edges
+  const languageReifications =
+    this.projectService.currentLanguage?.Reifications;
+
+  if (!languageReifications) {
+    return;
+  }
+
+  const updatedReificationIds = new Set(
+    reifications.map((reification) => reification.id),
+  );
+
+  this.reactFlow.setEdges((currentEdges) => {
+    const edgesWithoutUpdatedReifications = currentEdges.filter(
+      (edge) =>
+        !(
+          edge.type === "reificationEndpoint" &&
+          updatedReificationIds.has(edge.source)
+        ),
+    );
+
+    const newEdges: Edge[] = [];
+
+    for (const reification of reifications) {
+      for (const endpoint of reification.endpoints) {
+        newEdges.push(
+          ...convertReificationEndpointToEdges(
+            languageReifications,
+            reification.typeId,
+            reification.id,
+            endpoint,
+          ),
+        );
+      }
+    }
+
+    return [
+      ...edgesWithoutUpdatedReifications,
+      ...newEdges,
+    ];
+  });
 }
+
+  /**
+   * Update existing reifications
+   */
+  private addReifications(
+    model: Model,
+    reifications: Reification[],
+  ): void {
+    const reificationTypes =
+      this.projectService.currentLanguage?.Reifications;
+
+    if (!reificationTypes) {
+      return;
+    }
+
+    const newNodes: Node[] = [];
+
+    reifications.forEach(reification => {
+      const node = convertReificationToNode(
+        reificationTypes,
+        reification,
+      );
+
+      if (node) {
+        newNodes.push(node);
+        this.nodes[node.id] = node;
+      }
+    });
+
+    if (newNodes.length > 0) {
+      this.reactFlow.setNodes(currentNodes => [
+        ...currentNodes,
+        ...newNodes,
+      ]);
+    }
+  }
 
   /**
    * Add relationships
    */
   private addRelationships(
-    model: Model,
-    relationships: Relationship[],
-  ): void {
-    const newEdges: Edge[] = [];
+  model: Model,
+  relationships: Relationship[],
+): void {
+  const newEdges = relationships.map((relationship) =>
+    convertRelationToEdge(
+      this.projectService.currentLanguage.Relationships,
+      relationship,
+    ),
+  );
 
-    relationships.forEach(relationship => {
-      newEdges.push(convertRelationToEdge(this.projectService.currentLanguage.Relationships, relationship));
-    });
-
-    if (newEdges.length > 0) {
-      this.reactFlow.setEdges(currentEdges => [
-        ...currentEdges,
-        ...newEdges,
-      ]);
-    }
+  if (newEdges.length === 0) {
+    return;
   }
+
+  this.reactFlow.setEdges((currentEdges) => {
+    const existingIds = new Set(
+      currentEdges.map((edge) => edge.id),
+    );
+
+    const edgesToAdd = newEdges.filter(
+      (edge) => !existingIds.has(edge.id),
+    );
+
+    return [...currentEdges, ...edgesToAdd];
+  });
+}
 
   /**
    * Update existing relationships
@@ -302,7 +473,7 @@ export class IncrementalGraphUpdater {
   /**
    * Creates a React Flow node from a domain element.
    */
-  private createNode(elementTypes: any[], element: Element) {
+  private createElementNode(elementTypes: any[], element: Element) {
     return convertElementToNode(elementTypes, element);
   }
 

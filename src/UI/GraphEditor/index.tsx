@@ -169,43 +169,54 @@ function GraphEditorContent({
     });
 
   const handleNodeResizeEnd = useCallback(
-    (nodeId: string, width: number, height: number) => {
-      const modelElement = projectService.findModelElementById(
+    (nodeId: string, nodeType: "element" | "reification", width: number, height: number) => {
+      let modelNode: Element | Reification | undefined;
+      if (nodeType === "element") {
+        modelNode = projectService.findModelElementById(
+          projectService.currentModel,
+          nodeId,
+        );
+    } else if (nodeType === "reification") {
+      modelNode = projectService.findModelReificationById(
         projectService.currentModel,
         nodeId,
       );
+    }
 
-      if (!modelElement) {
+      if (!modelNode) {
         return;
       }
 
-      modelElement.width = width;
-      modelElement.height = height;
-
-      projectService.raiseEventUpdatedElement(
-        projectService.currentModel,
-        modelElement,
-      );
+      modelNode.width = width;
+      modelNode.height = height;
 
       setNodes((currentNodes) =>
         currentNodes.map((node) => {
-          if (node.id !== nodeId || node.type !== "element") {
-            return node;
-          }
-
+          
           return {
             ...node,
             width,
             height,
-            data: {
-              ...node.data,
-              element: modelElement,
-              style: {
-                ...(node.data as any).style,
-                width,
-                height,
-              },
-            },
+            data:
+              node.type === "element"
+                ? {
+                    ...node.data,
+                    element: modelNode,
+                    style: {
+                      ...(node.data as any).style,
+                      width,
+                      height,
+                    },
+                  }
+                : {
+                    ...node.data,
+                    reification: modelNode,
+                    style: {
+                      ...(node.data as any).style,
+                      width,
+                      height,
+                    },
+                  },
           };
         }),
       );
@@ -226,37 +237,45 @@ function GraphEditorContent({
     loadAnnotations();
   }, [loadAnnotations]);
 
-  useEffect(() => {
-    if (!projectService.currentModel || !projectService.currentLanguage) {
+    useEffect(() => {
+    if (!model || !projectService.currentLanguage) {
       return;
     }
 
-    setNodes([
-      ...projectService.currentModel.elements.map((element) =>
-        convertElementToNode(
-          projectService.currentLanguage.Elements,
-          element,
-          handleNodeResizeEnd,
+    console.log("Loading model", model);
+
+    setNodes(
+      [
+        ...model.elements.map((element) =>
+          convertElementToNode(
+            projectService.currentLanguage.Elements,
+            element,
+            handleNodeResizeEnd,
+          ),
         ),
-      ),
-      ...projectService.currentModel.reifications.map((reification) =>
-        convertReificationToNode(
-          projectService.currentLanguage.Reifications,
-          reification,
+
+        ...model.reifications.map((reification) =>
+          convertReificationToNode(
+            projectService.currentLanguage.Reifications,
+            reification,
+            handleNodeResizeEnd,
+          ),
         ),
-      ),
-    ]);
+      ],
+    );
     setEdges([
-      ...projectService.currentModel.relationships.map((relation) =>
+      ...model.relationships.map((relation) =>
         convertRelationToEdge(
           projectService.currentLanguage.Relationships,
           relation,
         ),
       ),
-      ...projectService.currentModel.reifications.flatMap((reification) =>
+
+      ...model.reifications.flatMap((reification) =>
         reification.endpoints.flatMap((endpoint) =>
           convertReificationEndpointToEdges(
             projectService.currentLanguage.Reifications,
+            reification.typeId,
             reification.id,
             endpoint,
           ),
@@ -264,8 +283,8 @@ function GraphEditorContent({
       ),
     ]);
   }, [
+    model,
     projectService.currentLanguage,
-    projectService.currentModel,
     handleNodeResizeEnd,
   ]);
 
@@ -314,21 +333,15 @@ function GraphEditorContent({
 
             if (modelElement) {
               Object.assign(modelElement, element);
-
-              projectService.raiseEventUpdatedElement(
-                projectService.currentModel,
-                modelElement,
-              );
-
               modelChanged = true;
             }
           } else if (node.type === "reification") {
             const reification = convertNodeToReification(node);
 
             const modelReification =
-              projectService.currentModel.reifications.find(
-                (currentReification) =>
-                  currentReification.id === reification.id,
+              projectService.findModelReificationById(
+                projectService.currentModel,
+                reification.id,
               );
 
             if (modelReification) {
@@ -356,27 +369,30 @@ function GraphEditorContent({
             (currentNode) => currentNode.id === change.id,
           );
 
-          if (!node || node.type !== "element") {
-            return;
-          }
+          if ( node.type === "element") {
 
-          const element = convertNodeToElement(node);
-          const modelElement = projectService.findModelElementById(
-            projectService.currentModel,
-            element.id,
-          );
-
-          if (modelElement) {
-            Object.assign(modelElement, element);
-
-            projectService.raiseEventUpdatedElement(
+            const element = convertNodeToElement(node);
+            const modelElement = projectService.findModelElementById(
               projectService.currentModel,
-              modelElement,
+              element.id,
             );
 
-            modelChanged = true;
+            if (modelElement) {
+              Object.assign(modelElement, element);
+              modelChanged = true;
+            }
+          } else if (node.type === "reification") {
+            const reification = convertNodeToReification(node);
+            const modelReification =
+              projectService.findModelReificationById(
+                projectService.currentModel,
+                reification.id,
+              );
+            if (modelReification) {
+              Object.assign(modelReification, reification);
+              modelChanged = true;
+            }
           }
-
           return;
         }
 
@@ -432,42 +448,71 @@ function GraphEditorContent({
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => {
-      let modelChanged = false;
+  (changes) => {
+    let modelChanged = false;
 
-      setEdges((edgesSnapshot) => {
-        const updatedEdges = applyEdgeChanges(changes, edgesSnapshot);
+    setEdges((edgesSnapshot) => {
+      const updatedEdges = applyEdgeChanges(changes, edgesSnapshot);
 
-        changes.forEach((change) => {
-          if (change.type !== "remove") {
-            return;
-          }
+      changes.forEach((change) => {
+        if (change.type !== "remove") {
+          return;
+        }
 
-          const edge = edgesSnapshot.find(
-            (currentEdge) => currentEdge.id === change.id,
-          );
+        const edge = edgesSnapshot.find(
+          (currentEdge) => currentEdge.id === change.id,
+        );
 
-          if (!edge) {
-            return;
-          }
+        if (!edge) {
+          return;
+        }
 
+        if (edge.type === "relation") {
           projectService.removeModelRelationshipById(
             projectService.currentModel,
             edge.id,
           );
 
           modelChanged = true;
-        });
+          return;
+        }
 
-        return updatedEdges;
+        if (edge.type === "reificationEndpoint") {
+          const reification =
+            projectService.findModelReificationById(
+              projectService.currentModel,
+              edge.source,
+            );
+
+          if (!reification) {
+            return;
+          }
+
+          const endpoint = reification.endpoints.find(
+            (endpoint) => endpoint.id === edge.sourceHandle,
+          );
+
+          if (!endpoint) {
+            return;
+          }
+
+          endpoint.elements = endpoint.elements.filter(
+            (elementId) => elementId !== edge.target,
+          );
+
+          modelChanged = true;
+        }
       });
 
-      if (modelChanged) {
-        syncModelChanges();
-      }
-    },
-    [projectService, syncModelChanges],
-  );
+      return updatedEdges;
+    });
+
+    if (modelChanged) {
+      syncModelChanges();
+    }
+  },
+  [projectService, syncModelChanges],
+);
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent) => {
@@ -497,10 +542,8 @@ function GraphEditorContent({
   };
 
   const onConnectEnd: OnConnectEnd = (event, connectionState) => {
-    const node = nodes.find((node) => node.id === connectionState.fromNode.id);
-    if (node.type === "reificationEndpoint") {
-      setCurrentEndpointType(null);
-    }
+    setCurrentRelationType(null);
+    setCurrentEndpointType(null);
   };
 
   const onConnect: OnConnect = useCallback(
@@ -514,45 +557,72 @@ function GraphEditorContent({
           params.target,
           [],
           0,
-          Number.MAX_SAFE_INTEGER
+          Number.MAX_SAFE_INTEGER,
         );
 
         projectService.currentModel.relationships.push(newRelation);
 
         const newEdge = convertRelationToEdge(
           projectService.currentLanguage.Relationships,
-          newRelation
+          newRelation,
         );
 
-        setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
+        setEdges((edgesSnapshot) => [
+          newEdge,
+          ...edgesSnapshot,
+        ]);
+
         setCurrentRelationType(null);
+        setCurrentEndpointType(null);
 
         syncModelChanges();
+
+        return;
       }
 
       if (currentEndpointType) {
-        let reification = projectService.currentModel.reifications.find(
-          (reification) => reification.id === params.source
-        );
+        const reification =
+          projectService.currentModel.reifications.find(
+            (reification) => reification.id === params.source,
+          );
+
+        if (!reification) {
+          return;
+        }
 
         let endpoint = reification.endpoints.find(
-          (endpoint) => endpoint.id === params.sourceHandle
+          (endpoint) => endpoint.id === params.sourceHandle,
         );
 
         if (!endpoint) {
-          endpoint = new Endpoint(currentEndpointType.id, []);
+          endpoint = new Endpoint(
+            currentEndpointType.uuid,
+            [],
+          );
+
           reification.endpoints.push(endpoint);
         }
 
         endpoint.elements.push(params.target);
 
-        const newEdge = convertReificationEndpointToEdges(
+        const newEdges = convertReificationEndpointToEdges(
           projectService.currentLanguage.Reifications,
+          reification.typeId,
           reification.id,
-          endpoint
-        ).at(-1);
+          endpoint,
+        );
 
-        setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
+        const newEdge = newEdges.at(-1);
+
+        if (newEdge) {
+          setEdges((edgesSnapshot) => [
+            newEdge,
+            ...edgesSnapshot,
+          ]);
+        }
+
+        setCurrentEndpointType(null);
+
         syncModelChanges();
       }
     },
@@ -562,7 +632,8 @@ function GraphEditorContent({
       projectService,
       syncModelChanges,
       setCurrentRelationType,
-    ]
+      setCurrentEndpointType,
+    ],
   );
 
   return (
@@ -654,10 +725,10 @@ function GraphEditorContent({
           const node = convertReificationToNode(
             projectService.currentLanguage.Reifications,
             reification,
+            handleNodeResizeEnd,
           );
 
           projectService.currentModel.reifications.push(reification);
-
           setNodes((nodesSnapshot) => [...nodesSnapshot, node]);
         }}
       />

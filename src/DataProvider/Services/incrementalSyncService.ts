@@ -1,11 +1,15 @@
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
 import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
 import { Relationship } from "../../Domain/ProductLineEngineering/Entities/Relationship";
+import { Reification } from "../../Domain/ProductLineEngineering/Entities/Reification";
 
 export interface ModelDiff {
   elementsAdded: Element[];
   elementsUpdated: Element[];
   elementsRemoved: string[];
+  reificationsAdded: Reification[];
+  reificationsUpdated: Reification[];
+  reificationsRemoved: string[];
   relationshipsAdded: Relationship[];
   relationshipsUpdated: Relationship[];
   relationshipsRemoved: string[];
@@ -22,6 +26,9 @@ export const calculateModelDiff = (
     elementsAdded: [],
     elementsUpdated: [],
     elementsRemoved: [],
+    reificationsAdded: [],
+    reificationsUpdated: [],
+    reificationsRemoved: [],
     relationshipsAdded: [],
     relationshipsUpdated: [],
     relationshipsRemoved: []
@@ -34,12 +41,15 @@ export const calculateModelDiff = (
 
   const currentElements = new Map(currentModel.elements.map(e => [e.id, e]));
   const currentRelationships = new Map(currentModel.relationships.map(r => [r.id, r]));
+  const currentReifications = new Map(currentModel.reifications.map(r => [r.id, r]));
 
   const newElements = newModelData.elements || [];
   const newRelationships = newModelData.relationships || [];
+  const newReifications = newModelData.reifications || [];
 
   const newElementsMap = new Map(newElements.map((e: Element) => [e.id, e]));
   const newRelationshipsMap = new Map(newRelationships.map((r: Relationship) => [r.id, r]));
+  const newReificationsMap = new Map(newReifications.map((r: Reification) => [r.id, r]));
 
   // Detectar elementos añadidos y actualizados
   newElements.forEach((element: Element) => {
@@ -55,6 +65,30 @@ export const calculateModelDiff = (
   currentElements.forEach((element, id) => {
     if (!newElementsMap.has(id)) {
       diff.elementsRemoved.push(id);
+    }
+  });
+
+  // Detectar reificaciones añadidas y actualizadas
+  newReifications.forEach((reification: Reification) => {
+    const currentReification = currentReifications.get(reification.id);
+
+    console.log("[REIFICATION DIFF]", {
+      id: reification.id,
+      currentReification,
+      newReification: reification,
+    });
+
+    if (!currentReification) {
+      diff.reificationsAdded.push(reification);
+    } else if (!areReificationsEqual(currentReification, reification)) {
+      diff.reificationsUpdated.push(reification);
+    }
+  });
+  
+  // Detectar reificaciones removidas
+  currentReifications.forEach((reification, id) => {
+    if (!newReificationsMap.has(id)) {
+      diff.reificationsRemoved.push(id);
     }
   });
 
@@ -74,8 +108,77 @@ export const calculateModelDiff = (
       diff.relationshipsRemoved.push(id);
     }
   });
-
+  console.log("Calculated model diff", diff);
   return diff;
+};
+
+/**
+ * Compara dos reificaciones para detectar cambios
+ */
+const areReificationsEqual = (
+  reif1: Reification,
+  reif2: Reification,
+): boolean => {
+  if (
+    reif1.name !== reif2.name ||
+    reif1.typeId !== reif2.typeId ||
+    reif1.x !== reif2.x ||
+    reif1.y !== reif2.y ||
+    reif1.width !== reif2.width ||
+    reif1.height !== reif2.height ||
+    reif1.parentId !== reif2.parentId
+  ) {
+    return false;
+  }
+
+  // Properties
+  if (reif1.properties.length !== reif2.properties.length) {
+    return false;
+  }
+
+  for (const prop1 of reif1.properties) {
+    const prop2 = reif2.properties.find(
+      (prop) => prop.id === prop1.id,
+    );
+
+    if (!prop2) {
+      return false;
+    }
+
+    if (
+      prop1.value !== prop2.value ||
+      prop1.name !== prop2.name
+    ) {
+      return false;
+    }
+  }
+
+  // Endpoints
+  if (reif1.endpoints.length !== reif2.endpoints.length) {
+    return false;
+  }
+
+  for (const endpoint1 of reif1.endpoints) {
+    const endpoint2 = reif2.endpoints.find(
+      (endpoint) => endpoint.id === endpoint1.id,
+    );
+
+    if (!endpoint2) {
+      return false;
+    }
+
+    if (endpoint1.elements.length !== endpoint2.elements.length) {
+      return false;
+    }
+
+    for (const elementId of endpoint1.elements) {
+      if (!endpoint2.elements.includes(elementId)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 };
 
 /**
@@ -215,5 +318,8 @@ export const hasMeaningfulChanges = (diff: ModelDiff): boolean => {
          diff.elementsRemoved.length > 0 ||
          diff.relationshipsAdded.length > 0 ||
          diff.relationshipsUpdated.length > 0 ||
-         diff.relationshipsRemoved.length > 0;
+         diff.relationshipsRemoved.length > 0 ||
+         diff.reificationsAdded.length > 0 ||
+         diff.reificationsUpdated.length > 0 ||
+         diff.reificationsRemoved.length > 0;
 };

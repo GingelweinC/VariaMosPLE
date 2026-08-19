@@ -22,6 +22,7 @@ interface UseModelSynchronizationProps {
 type ModelSnapshot = {
   elements: any[];
   relationships: any[];
+  reifications: any[];
 };
 
 export function useModelSynchronization({
@@ -64,9 +65,9 @@ export function useModelSynchronization({
     return {
       elements: structuredClone(currentModel.elements ?? []),
       relationships: structuredClone(currentModel.relationships ?? []),
+      reifications: structuredClone(currentModel.reifications ?? []),
     };
   }, []);
-
   const cleanupUnusedModelResources = useCallback(
     (currentModel: Model) => {
       const currentModelKey = getModelKey(currentModel);
@@ -89,7 +90,7 @@ export function useModelSynchronization({
   const syncModelChanges = useCallback(() => {
     const currentModel = projectService.currentModel;
     const projectId = projectService.getProject()?.id;
-
+    
     if (
       !isCollaborative ||
       !projectId ||
@@ -106,9 +107,8 @@ export function useModelSynchronization({
       (state) => {
         state.set("data", {
           elements: structuredClone(currentModel.elements ?? []),
-          relationships: structuredClone(
-            currentModel.relationships ?? [],
-          ),
+          relationships: structuredClone(currentModel.relationships ?? []),
+          reifications: structuredClone(currentModel.reifications ?? []),
           timestamp: Date.now(),
         });
       },
@@ -207,6 +207,9 @@ export function useModelSynchronization({
       const sharedRelationships = structuredClone(
         modelData?.relationships ?? [],
       );
+      const sharedReifications = structuredClone(
+        modelData?.reifications ?? [],
+      );
 
       const localSnapshot = modelSnapshots.current.get(modelKey) ??
         cloneSnapshot(currentModel);
@@ -215,6 +218,7 @@ export function useModelSynchronization({
         ...currentModel,
         elements: localSnapshot.elements,
         relationships: localSnapshot.relationships,
+        reifications: localSnapshot.reifications,
       };
 
       const diff = calculateModelDiff(
@@ -223,16 +227,18 @@ export function useModelSynchronization({
           ...currentModel,
           elements: sharedElements,
           relationships: sharedRelationships,
+          reifications: sharedReifications,
         },
       );
 
       currentModel.elements = sharedElements;
       currentModel.relationships = sharedRelationships;
-
+      currentModel.reifications = sharedReifications;
       setModel({
         ...currentModel,
         elements: sharedElements,
         relationships: sharedRelationships,
+        reifications: sharedReifications,
       });
 
       if (updater && hasMeaningfulChanges(diff)) {
@@ -245,6 +251,7 @@ export function useModelSynchronization({
       modelSnapshots.current.set(modelKey, {
         elements: structuredClone(sharedElements),
         relationships: structuredClone(sharedRelationships),
+        reifications: structuredClone(sharedReifications),
       });
 
       isHydratedRef.current = true;
@@ -305,48 +312,50 @@ export function useModelSynchronization({
             ...currentModel,
             elements: snapshot.elements,
             relationships: snapshot.relationships,
+            reifications: snapshot.reifications,
           };
 
           const diff = calculateModelDiff(
             snapshotAsModel,
-            modelData,
+            {
+              ...currentModel,
+              elements: structuredClone(
+                modelData.elements ?? currentModel.elements ?? [],
+              ),
+              relationships: structuredClone(
+                modelData.relationships ?? currentModel.relationships ?? [],
+              ),
+              reifications: structuredClone(
+                modelData.reifications ?? currentModel.reifications ?? [],
+              ),
+            },
           );
 
           if (!hasMeaningfulChanges(diff)) {
             return;
           }
 
-          currentModel.elements =
-            structuredClone(
-              modelData.elements ??
-                currentModel.elements ??
-                [],
+            currentModel.elements = structuredClone(
+              modelData.elements ?? currentModel.elements ?? [],
             );
 
-          currentModel.relationships =
-            structuredClone(
-              modelData.relationships ??
-                currentModel.relationships ??
-                [],
+            currentModel.relationships = structuredClone(
+              modelData.relationships ?? currentModel.relationships ?? [],
             );
 
-          setModel({
-            ...currentModel,
-            elements: currentModel.elements,
-            relationships: currentModel.relationships,
-          });
-
-          const currentUpdater =
-            incrementalUpdaters.current.get(
-              currentModelKey,
+            currentModel.reifications = structuredClone(
+              modelData.reifications ?? currentModel.reifications ?? [],
             );
 
-          if (currentUpdater) {
-            currentUpdater.applyIncrementalChanges(
-              currentModel,
-              diff,
-            );
-          }
+            const currentUpdater =
+              incrementalUpdaters.current.get(currentModelKey);
+
+            if (currentUpdater) {
+              currentUpdater.applyIncrementalChanges(
+                currentModel,
+                diff,
+              );
+            }
 
           modelSnapshots.current.set(
             currentModelKey,
@@ -382,15 +391,12 @@ export function useModelSynchronization({
         }
 
         state.set("data", {
-          elements: structuredClone(
-            currentModel.elements ?? [],
-          ),
-          relationships: structuredClone(
-            currentModel.relationships ?? [],
-          ),
+          elements: structuredClone(currentModel.elements ?? []),
+          relationships: structuredClone(currentModel.relationships ?? []),
+          reifications: structuredClone(currentModel.reifications ?? []),
           timestamp: Date.now(),
         });
-
+        
         modelSnapshots.current.set(
           modelKey,
           cloneSnapshot(currentModel),
