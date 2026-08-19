@@ -7,11 +7,10 @@ import {
   NodeResizer,
   Position,
   useConnection,
-  useReactFlow,
   useUpdateNodeInternals,
 } from "@xyflow/react";
 import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useConnectionContext } from "./ConnectionContext";
 
 export type ElementNodeType = Node<{
@@ -123,7 +122,6 @@ export function convertElementToNode(
 
 export function convertNodeToElement(node: Node): Element {
   const element = node.data.element as Element;
-  const style = node.data.style as React.CSSProperties;
 
   element.x = node.position.x;
   element.y = node.position.y;
