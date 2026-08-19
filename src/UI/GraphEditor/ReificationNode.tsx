@@ -5,18 +5,17 @@ import {
   Node,
   NodeProps,
   NodeResizer,
-  OnResize,
   Position,
-  useReactFlow,
   useUpdateNodeInternals,
 } from "@xyflow/react";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { Reification } from "../../Domain/ProductLineEngineering/Entities/Reification";
 
 export type ReificationNodeType = Node<
   {
     reification: Reification;
     style: React.CSSProperties;
+    onResizeEnd: (nodeId: string, nodeType: "element" | "reification", width: number, height: number) => void;
   },
   "reification"
 >;
@@ -37,45 +36,11 @@ function generatePosition(i: number) {
 
 export default function ReificationNode({
   id,
-  data: { reification, style },
+  data: { reification, style, onResizeEnd },
   selected,
+  width,
+  height,
 }: NodeProps<ReificationNodeType>): JSX.Element {
-  const { updateNode } = useReactFlow();
-
-  const onResize: OnResize = useCallback(
-    (_event, params) => {
-      updateNode(id, (node: Node) => {
-        const reification = node.data.reification as Reification;
-        return {
-          ...node,
-          position: {
-            x:
-              params.direction[0] === 1
-                ? node.position.x +
-                  Math.max(0, reification.width - params.width)
-                : node.position.x -
-                  Math.max(0, params.width - reification.width),
-            y:
-              params.direction[1] === 1
-                ? node.position.y +
-                  Math.max(0, reification.height - params.height)
-                : node.position.y -
-                  Math.max(0, params.height - reification.height),
-          },
-          data: {
-            ...node.data,
-            reification: {
-              ...reification,
-              height: params.height,
-              width: params.width,
-            },
-          },
-        };
-      });
-    },
-    [id, updateNode],
-  );
-
   const updateNodeInternals = useUpdateNodeInternals();
 
   useEffect(() => {
@@ -87,8 +52,8 @@ export default function ReificationNode({
       className="reification-node"
       style={{
         ...style,
-        height: reification.height,
-        width: reification.width,
+        width: width ?? reification.width,
+        height: height ?? reification.height,
       }}
     >
       {reification.endpoints.map((endpoint, index) => (
@@ -103,7 +68,14 @@ export default function ReificationNode({
         />
       ))}
 
-      <NodeResizer isVisible={selected} onResize={onResize} />
+      <NodeResizer
+        isVisible={selected}
+        minWidth={20}
+        minHeight={20}
+        onResizeEnd={(_, params) => {
+          onResizeEnd?.(id, "reification", params.width, params.height);
+        }}
+      />
 
       <div className="reification-node-title">{reification.name}</div>
       {reification.properties.map((p) => (
@@ -118,6 +90,7 @@ export default function ReificationNode({
 export function convertReificationToNode(
   reificationTypes: any[],
   reification: Reification,
+  onResizeEnd?: (nodeId: string, nodeType: "element" | "reification", width: number, height: number) => void,
 ) {
   const reificationType = reificationTypes.find(
     (reificationType) => reificationType.uuid === reification.typeId,
@@ -126,8 +99,13 @@ export function convertReificationToNode(
   return {
     id: reification.id,
     position: { x: reification.x, y: reification.y },
+
+    width: reification.width,
+    height: reification.height,
+
     data: {
-      reification: reification,
+      reification,
+      onResizeEnd,
       style: {
         backgroundColor: reificationType.style.fill.value,
         color: reificationType.style.font.color,
@@ -145,8 +123,8 @@ export function convertNodeToReification(node: Node): Reification {
   reification.x = node.position.x;
   reification.y = node.position.y;
 
-  reification.width = node.measured.width;
-  reification.height = node.measured.height;
+  reification.width = node.width;
+  reification.height = node.height;
 
   //properties TODO
   return reification;

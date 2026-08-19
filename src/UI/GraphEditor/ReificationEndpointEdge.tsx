@@ -7,10 +7,7 @@ import {
   useInternalNode,
 } from "@xyflow/react";
 import { getEdgeParams } from "./utils";
-import {
-  Endpoint,
-  Reification,
-} from "../../Domain/ProductLineEngineering/Entities/Reification";
+import { Endpoint } from "../../Domain/ProductLineEngineering/Entities/Reification";
 
 export type ReificationEndpointEdgeType = Edge<{}, "reification-endpoint">;
 
@@ -54,17 +51,22 @@ export default function ReificationEndpointEdge({
 
 export function convertReificationEndpointToEdges(
   reificationTypes: any[],
+  reificationTypeId: string,
   reificationId: string,
   endpoint: Endpoint,
 ) {
-  const endpointTypes = reificationTypes.flatMap(
-    (reificationType) => reificationType.endpoints,
-  );
+  
+  const reificationType = reificationTypes.find(
+    (type) => type.uuid === reificationTypeId,
+    );
+  const endpointTypes = reificationType.endpoints;
+
   const endpointType = endpointTypes.find(
-    (endpointType) => endpointType.uuid === endpoint.id,
+    (type) => type.uuid === endpoint.id,
   );
+
   return endpoint.elements.map((elementId) => ({
-    id: endpoint.id + "_" + elementId,
+    id: crypto.randomUUID(),
     source: reificationId,
     sourceHandle: endpoint.id,
     target: elementId,
@@ -93,10 +95,10 @@ export function convertReificationEndpointToEdges(
         ? {
             type: MarkerType.Arrow,
             height:
-              endpointType.style.sourceArrow.height ??
+              endpointType.style.targetArrow.height ??
               endpointType.style.stroke.width * 5,
             width:
-              endpointType.style.sourceArrow.width ??
+              endpointType.style.targetArrow.width ??
               endpointType.style.stroke.width * 5,
             color: endpointType.style.stroke.color,
             strokeWidth: endpointType.style.stroke.width,
