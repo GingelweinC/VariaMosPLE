@@ -36,4 +36,16 @@ export class Reification {
     this.endpoints = endpoints;
     this.parentId = parentId;
   }
+
+  static fromReificationType(reificationType: any) {
+    return new Reification(
+      "New " + reificationType.name,
+      reificationType.uuid,
+      [],
+      reificationType.endpoints.map(
+        (endpoint) => new Endpoint(endpoint.uuid, []),
+      ),
+      null,
+    );
+  }
 }

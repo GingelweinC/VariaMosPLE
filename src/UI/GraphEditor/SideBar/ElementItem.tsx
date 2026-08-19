@@ -14,11 +14,7 @@ export default function ElementItem({
       {elementType.name}
       <button
         type="button"
-        onClick={() =>
-          addElement(
-            new Element("New " + elementType.name, elementType.uuid, [], null),
-          )
-        }
+        onClick={() => addElement(Element.fromElementType(elementType))}
       >
         +
       </button>
