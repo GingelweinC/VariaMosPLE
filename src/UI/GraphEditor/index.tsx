@@ -168,71 +168,6 @@ function GraphEditorContent({
       isCollaborative,
     });
 
-  const handleNodeResizeEnd = useCallback(
-    (nodeId: string, nodeType: "element" | "reification", width: number, height: number) => {
-      let modelNode: Element | Reification | undefined;
-      if (nodeType === "element") {
-        modelNode = projectService.findModelElementById(
-          projectService.currentModel,
-          nodeId,
-        );
-    } else if (nodeType === "reification") {
-      modelNode = projectService.findModelReificationById(
-        projectService.currentModel,
-        nodeId,
-      );
-    }
-
-      if (!modelNode) {
-        return;
-      }
-
-      modelNode.width = width;
-      modelNode.height = height;
-
-      setNodes((currentNodes) =>
-        currentNodes.map((node) => {
-          
-          return {
-            ...node,
-            width,
-            height,
-            data:
-              node.type === "element"
-                ? {
-                    ...node.data,
-                    element: modelNode,
-                    style: {
-                      ...(node.data as any).style,
-                      width,
-                      height,
-                    },
-                  }
-                : {
-                    ...node.data,
-                    reification: modelNode,
-                    style: {
-                      ...(node.data as any).style,
-                      width,
-                      height,
-                    },
-                  },
-          };
-        }),
-      );
-
-      syncModelChanges();
-
-      const projectId = projectService.getProject()?.id;
-      const modelId = model?.id;
-
-      if (projectId && modelId) {
-        setUserIdle(projectId, modelId);
-      }
-    },
-    [projectService, model?.id, syncModelChanges],
-  );
-
   useEffect(() => {
     loadAnnotations();
   }, [loadAnnotations]);
@@ -250,7 +185,6 @@ function GraphEditorContent({
           convertElementToNode(
             projectService.currentLanguage.Elements,
             element,
-            handleNodeResizeEnd,
           ),
         ),
 
@@ -258,7 +192,6 @@ function GraphEditorContent({
           convertReificationToNode(
             projectService.currentLanguage.Reifications,
             reification,
-            handleNodeResizeEnd,
           ),
         ),
       ],
@@ -285,7 +218,6 @@ function GraphEditorContent({
   }, [
     model,
     projectService.currentLanguage,
-    handleNodeResizeEnd,
   ]);
 
   const nodeTypes: NodeTypes = {
@@ -369,30 +301,46 @@ function GraphEditorContent({
             (currentNode) => currentNode.id === change.id,
           );
 
-          if ( node.type === "element") {
+          if (!node) {
+            return;
+          }
 
+          const width = change.dimensions?.width;
+          const height = change.dimensions?.height;
+
+          if (width == null || height == null) {
+            return;
+          }
+
+          if (node.type === "element") {
             const element = convertNodeToElement(node);
+
             const modelElement = projectService.findModelElementById(
               projectService.currentModel,
               element.id,
             );
 
             if (modelElement) {
-              Object.assign(modelElement, element);
+              modelElement.width = width;
+              modelElement.height = height;
               modelChanged = true;
             }
           } else if (node.type === "reification") {
             const reification = convertNodeToReification(node);
+
             const modelReification =
               projectService.findModelReificationById(
                 projectService.currentModel,
                 reification.id,
               );
+
             if (modelReification) {
-              Object.assign(modelReification, reification);
+              modelReification.width = width;
+              modelReification.height = height;
               modelChanged = true;
             }
           }
+
           return;
         }
 
@@ -709,7 +657,6 @@ function GraphEditorContent({
           const node = convertElementToNode(
             projectService.currentLanguage.Elements,
             element,
-            handleNodeResizeEnd,
           );
 
           projectService.currentModel.elements.push(element);
@@ -725,7 +672,6 @@ function GraphEditorContent({
           const node = convertReificationToNode(
             projectService.currentLanguage.Reifications,
             reification,
-            handleNodeResizeEnd,
           );
 
           projectService.currentModel.reifications.push(reification);

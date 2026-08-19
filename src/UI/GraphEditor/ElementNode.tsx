@@ -17,12 +17,11 @@ import { useConnectionContext } from "./ConnectionContext";
 export type ElementNodeType = Node<{
   element: Element;
   style: React.CSSProperties;
-  onResizeEnd?: (nodeId: string, nodeType: "element" | "reification", width: number, height: number) => void;
 }, "element">;
 
 export default function ElementNode({
   id,
-  data: { element, style, onResizeEnd },
+  data: { element, style },
   selected,
   width,
   height,
@@ -82,9 +81,6 @@ export default function ElementNode({
         isVisible={selected}
         minWidth={20}
         minHeight={20}
-        onResizeEnd={(_, params) => {
-          onResizeEnd?.(id, "element", params.width, params.height);
-        }}
       />
 
       <div className="element-node-title">{element.name}</div>
@@ -100,7 +96,6 @@ export default function ElementNode({
 export function convertElementToNode(
   elementTypes: any[],
   element: Element,
-  onResizeEnd?: (nodeId: string, nodeType: "element" | "reification", width: number, height: number) => void
 ) {
   const elementType = elementTypes.find(
     (elementType) => elementType.uuid === element.type
@@ -113,7 +108,6 @@ export function convertElementToNode(
     height: element.height,
     data: {
       element,
-      onResizeEnd,
       style: {
         width: element.width,
         height: element.height,

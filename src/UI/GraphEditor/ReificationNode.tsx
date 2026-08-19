@@ -15,7 +15,6 @@ export type ReificationNodeType = Node<
   {
     reification: Reification;
     style: React.CSSProperties;
-    onResizeEnd: (nodeId: string, nodeType: "element" | "reification", width: number, height: number) => void;
   },
   "reification"
 >;
@@ -36,7 +35,7 @@ function generatePosition(i: number) {
 
 export default function ReificationNode({
   id,
-  data: { reification, style, onResizeEnd },
+  data: { reification, style },
   selected,
   width,
   height,
@@ -72,9 +71,6 @@ export default function ReificationNode({
         isVisible={selected}
         minWidth={20}
         minHeight={20}
-        onResizeEnd={(_, params) => {
-          onResizeEnd?.(id, "reification", params.width, params.height);
-        }}
       />
 
       <div className="reification-node-title">{reification.name}</div>
@@ -90,7 +86,6 @@ export default function ReificationNode({
 export function convertReificationToNode(
   reificationTypes: any[],
   reification: Reification,
-  onResizeEnd?: (nodeId: string, nodeType: "element" | "reification", width: number, height: number) => void,
 ) {
   const reificationType = reificationTypes.find(
     (reificationType) => reificationType.uuid === reification.typeId,
@@ -105,7 +100,6 @@ export function convertReificationToNode(
 
     data: {
       reification,
-      onResizeEnd,
       style: {
         backgroundColor: reificationType.style.fill.value,
         color: reificationType.style.font.color,
