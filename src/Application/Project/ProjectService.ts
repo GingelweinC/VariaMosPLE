@@ -1275,6 +1275,10 @@ export default class ProjectService {
     return ProjectUseCases.findModelById(project, uid);
   }
 
+  findModelReificationById(model: Model, uid: any) {
+    return ProjectUseCases.findModelReificationById(model, uid);
+  }
+
   findModelElementById(model: Model, uid: any) {
     return ProjectUseCases.findModelElementById(model, uid);
   }

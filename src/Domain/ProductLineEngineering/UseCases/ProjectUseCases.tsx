@@ -7,6 +7,7 @@ import { Relationship } from "../Entities/Relationship";
 import { Point } from "../Entities/Point";
 import { Property } from "../Entities/Property";
 import { Element } from "../Entities/Element";
+import { Reification } from "../Entities/Reification";
 
 enum ModelType {
   Domain = "Domain",
@@ -713,6 +714,17 @@ export default class ProjectUseCases {
     return null;
   }
 
+  static findModelReificationById(model: Model, uid: any) {
+    if (model) {
+      for (let i = 0; i < model.reifications.length; i++) {
+        const reification: Reification = model.reifications[i];
+        if (reification.id === uid) {
+          return reification;
+        }
+      }
+    }
+    return null;
+  }
 
   static findModelElementById(model: Model, uid: any) {
     if (model) {
