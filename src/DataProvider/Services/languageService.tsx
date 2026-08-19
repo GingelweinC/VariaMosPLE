@@ -30,10 +30,15 @@ export default class LanguageService {
     try {
       const res = await LANGUAGES_CLIENT.get("/" + languageId + "/reification-types");
       const reifications: any = res.data;
-      await reifications.forEach(async reification => {
-        const res = await LANGUAGES_CLIENT.get("/" + languageId + "/reification-types/" + reification.uuid + "/endpoints");
-        reification.endpoints = res.data;
-      });
+      await Promise.all(
+        reifications.map(async (reification) => {
+          const res = await LANGUAGES_CLIENT.get(
+            "/" + languageId + "/reification-types/" + reification.uuid + "/endpoints"
+          );
+
+          reification.endpoints = res.data;
+        })
+      );
       return reifications;
     } catch (error) {
       console.log("Something wrong in getReificationsByLanguageId Service:", error);
