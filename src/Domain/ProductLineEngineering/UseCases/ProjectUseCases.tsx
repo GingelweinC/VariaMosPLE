@@ -738,63 +738,6 @@ export default class ProjectUseCases {
     return null;
   }
 
-  static findModelElementPropertyById(model: Model, uid: any) {
-    if (model) {
-      for (const elem of model.elements) {
-        for (const prop of elem.properties) {
-          if (prop.id === uid) {
-            return [elem, prop];
-          }
-        }
-      }
-    }
-    return null;
-  }
-
-  static findModelElementPropertyByIdInProject(project: Project, id: any) {
-    for (let i = 0; i < project.productLines.length; i++) {
-      const productLine = project.productLines[i];
-      for (let k = 0; k < productLine.domainEngineering.models.length; k++) {
-        const model = productLine.domainEngineering.models[k];
-        const [element, elementProperty] = this.findModelElementPropertyById(
-          model,
-          id
-        );
-        if (element && elementProperty) {
-          return [element, elementProperty];
-        }
-      }
-      for (
-        let ap = 0;
-        ap < productLine.applicationEngineering.applications.length;
-        ap++
-      ) {
-        const application = productLine.applicationEngineering.applications[ap];
-        for (let k = 0; k < application.models.length; k++) {
-          const model = application.models[k];
-          const [element, elementProperty] = this.findModelElementPropertyById(
-            model,
-            id
-          );
-          if (element && elementProperty) {
-            return [element, elementProperty];
-          }
-        }
-        for (let ad = 0; ad < application.adaptations.length; ad++) {
-          const adaptation = application.adaptations[ad];
-          for (let k = 0; k < adaptation.models.length; k++) {
-            const model = adaptation.models[k];
-            const [element, elementProperty] =
-              this.findModelElementPropertyById(model, id);
-            if (element && elementProperty) {
-              return [element, elementProperty];
-            }
-          }
-        }
-      }
-    }
-    return null;
-  }
   static findModelElementByName(model: Model, name: any) {
     if (model) {
       for (let i = 0; i < model.elements.length; i++) {

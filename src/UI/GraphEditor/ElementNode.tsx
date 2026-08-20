@@ -85,7 +85,7 @@ export default function ElementNode({
       <div className="element-node-title">{element.name}</div>
 
       {element.properties.map((p) => (
-        <div className="element-node-property" key={p.id}>
+        <div className="element-node-property" key={p.name}>
           {p.name} = {p.value}
         </div>
       ))}

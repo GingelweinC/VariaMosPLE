@@ -138,7 +138,7 @@ const areReificationsEqual = (
 
   for (const prop1 of reif1.properties) {
     const prop2 = reif2.properties.find(
-      (prop) => prop.id === prop1.id,
+      (prop) => prop.name === prop1.name,
     );
 
     if (!prop2) {
@@ -203,7 +203,7 @@ const areElementsEqual = (element1: Element, element2: Element): boolean => {
 
   for (let i = 0; i < element1.properties.length; i++) {
     const prop1 = element1.properties[i];
-    const prop2 = element2.properties.find(p => p.id === prop1.id);
+    const prop2 = element2.properties.find(p => p.name === prop1.name);
     if (!prop2) {
       return false;
     }
@@ -254,8 +254,7 @@ const areRelationshipsEqual = (rel1: Relationship, rel2: Relationship): boolean 
       }
 
       if (prop1.value !== prop2.value ||
-          prop1.type !== prop2.type ||
-          prop1.comment !== prop2.comment) {
+          prop1.type !== prop2.type) {
         return false;
       }
     }

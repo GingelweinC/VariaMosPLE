@@ -14,7 +14,7 @@ export default class KaosGenerator {
    */
   static generateFromContext(
     contextModel: Model,
-    projectService: ProjectService
+    projectService: ProjectService,
   ): Model {
     // 1) Creamos el KAOS Model usando el constructor
     const kaosModel = new Model(
@@ -39,9 +39,11 @@ export default class KaosGenerator {
     const ROW_SPACING = 100;
 
     // 2) Extraemos la única ProductLine
-    const pl = contextModel.elements.find(e => e.type === "ProductLine")!;
-    const purpose = pl.properties.find(p => p.name === "Purpose")?.value || "";
-    const qgString = pl.properties.find(p => p.name === "QualityGoals")?.value || "";
+    const pl = contextModel.elements.find((e) => e.type === "ProductLine")!;
+    const purpose =
+      pl.properties.find((p) => p.name === "Purpose")?.value || "";
+    const qgString =
+      pl.properties.find((p) => p.name === "QualityGoals")?.value || "";
 
     // 3) Hard Goal raíz
     const root: Element = {
@@ -55,22 +57,21 @@ export default class KaosGenerator {
       parentId: null,
       properties: [
         new Property(
-          "Description", purpose, "String",
-          undefined, undefined, undefined,
-          false, true, "Hard goal",
-          "", {}, 0, 0, "", "", null
-        )
+          "Description",
+          "string",
+          purpose,
+        ),
       ],
       sourceModelElements: [],
-      instanceOfId: null
+      instanceOfId: null,
     };
     kaosModel.elements.push(root);
 
     // 4) SoftGoals hijos del root a partir de QualityGoals
     qgString
       .split(/[,;]/)
-      .map(s => s.trim())
-      .filter(s => s)
+      .map((s) => s.trim())
+      .filter((s) => s)
       .forEach((text, i) => {
         const sg: Element = {
           id: uuidv4(),
@@ -83,14 +84,13 @@ export default class KaosGenerator {
           parentId: null,
           properties: [
             new Property(
-              "Description", text, "String",
-              undefined, undefined, undefined,
-              false, true, "Soft goal",
-              "", {}, 0, 0, "", "", null
-            )
+              "Description",
+              "string",
+              text,
+            ),
           ],
           sourceModelElements: [],
-          instanceOfId: null
+          instanceOfId: null,
         };
         kaosModel.elements.push(sg);
 
@@ -104,17 +104,19 @@ export default class KaosGenerator {
           points: [],
           min: 0,
           max: 999999,
-          properties: []
+          properties: [],
         });
       });
 
     // 5) Para cada Association Entity→PL: SubGoal + SoftGoals + Operationalization + Bundle
     contextModel.relationships
-      .filter(rel => rel.type === "Association" && rel.targetId === pl.id)
+      .filter((rel) => rel.type === "Association" && rel.targetId === pl.id)
       .forEach((assoc, idx) => {
-        const ent = contextModel.elements.find(e => e.id === assoc.sourceId)!;
-        const need = assoc.properties.find(p => p.name === "Entity_need")?.value || "";
-        const solution = assoc.properties.find(p => p.name === "SPL_solution")?.value || "";
+        const ent = contextModel.elements.find((e) => e.id === assoc.sourceId)!;
+        const need =
+          assoc.properties.find((p) => p.name === "Entity_need")?.value || "";
+        const solution =
+          assoc.properties.find((p) => p.name === "SPL_solution")?.value || "";
 
         // 5.1) SubGoal para la necesidad de la entidad
         const sub: Element = {
@@ -128,14 +130,13 @@ export default class KaosGenerator {
           parentId: null,
           properties: [
             new Property(
-              "Description", need, "String",
-              undefined, undefined, undefined,
-              false, true, "Hard goal",
-              "", {}, 0, 0, "", "", null
-            )
+              "Description",
+              "string",
+              need,
+            ),
           ],
           sourceModelElements: [],
-          instanceOfId: null
+          instanceOfId: null,
         };
         kaosModel.elements.push(sub);
 
@@ -149,15 +150,17 @@ export default class KaosGenerator {
           points: [],
           min: 1,
           max: 1,
-          properties: []
+          properties: [],
         });
 
         // 5.2) SoftGoals a partir de Conditions_of_use de la entidad
-        const conds = ent.properties.find(p => p.name === "Conditions_of_use")?.value || "";
+        const conds =
+          ent.properties.find((p) => p.name === "Conditions_of_use")?.value ||
+          "";
         conds
           .split(/[,;]/)
-          .map(s => s.trim())
-          .filter(s => s)
+          .map((s) => s.trim())
+          .filter((s) => s)
           .forEach((text, j) => {
             const sg: Element = {
               id: uuidv4(),
@@ -170,14 +173,13 @@ export default class KaosGenerator {
               parentId: null,
               properties: [
                 new Property(
-                  "Description", text, "String",
-                  undefined, undefined, undefined,
-                  false, true, "Soft goal",
-                  "", {}, 0, 0, "", "", null
-                )
+                  "Description",
+                  "string",
+                  text,
+                ),
               ],
               sourceModelElements: [],
-              instanceOfId: null
+              instanceOfId: null,
             };
             kaosModel.elements.push(sg);
 
@@ -191,7 +193,7 @@ export default class KaosGenerator {
               points: [],
               min: 0,
               max: 999999,
-              properties: []
+              properties: [],
             });
           });
 
@@ -207,14 +209,13 @@ export default class KaosGenerator {
           parentId: null,
           properties: [
             new Property(
-              "Description", `Implements ${sub.name}`, "String",
-              undefined, undefined, undefined,
-              false, true, "Operationalization",
-              "", {}, 0, 0, "", "", null
-            )
+              "Description",
+              "string",
+              `Implements ${sub.name}`,
+            ),
           ],
           sourceModelElements: [],
-          instanceOfId: null
+          instanceOfId: null,
         };
         kaosModel.elements.push(op);
 
@@ -228,7 +229,7 @@ export default class KaosGenerator {
           points: [],
           min: 1,
           max: 1,
-          properties: []
+          properties: [],
         });
       });
 

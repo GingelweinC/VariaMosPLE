@@ -1319,13 +1319,6 @@ export default class ProjectService {
     );
   }
 
-  findModelElementPropertyByIdInProject(propertyId: string) {
-    return ProjectUseCases.findModelElementPropertyByIdInProject(
-      this._project,
-      propertyId
-    );
-  }
-
   generateId() {
     return ProjectUseCases.generateId();
   }
@@ -1637,7 +1630,7 @@ export default class ProjectService {
     formattedResults.forEach(elem => {
       let esdelcore = !elem[1];
       const element = this.findModelElementByIdInProject(elem[0]);
-      const property = new Property('Core', esdelcore, "Boolean", null, null, null, false, false, null, null, null, null, null, null, null, null);
+      const property = new Property('Core', "boolean", esdelcore, false);
       element.properties.push(property);
       console.log(element.properties);
     });

@@ -1,36 +1,44 @@
-import React, { useState, useEffect, ChangeEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 import { IoIosAddCircle } from "react-icons/io";
 import { TiDelete } from "react-icons/ti";
 import { MdEdit } from "react-icons/md";
 import { FaTrashAlt } from "react-icons/fa";
 import { MdLibraryAdd } from "react-icons/md";
-import ProjectService from '../../Application/Project/ProjectService';
-import { Element } from '../../Domain/ProductLineEngineering/Entities/Element';
-import { Property } from '../../Domain/ProductLineEngineering/Entities/Property';
-import { Relationship } from '../../Domain/ProductLineEngineering/Entities/Relationship';
-import { Model } from '../../Domain/ProductLineEngineering/Entities/Model';
-import EditFeatureModal from './EditFeatureModal';
-import { ConfigurationInformation } from '../../Domain/ProductLineEngineering/Entities/ConfigurationInformation';
-import './scope.css';
-import { v4 as uuidv4 } from 'uuid';
+import ProjectService from "../../Application/Project/ProjectService";
+import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
+import { Property } from "../../Domain/ProductLineEngineering/Entities/Property";
+import { Relationship } from "../../Domain/ProductLineEngineering/Entities/Relationship";
+import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
+import EditFeatureModal from "./EditFeatureModal";
+import { ConfigurationInformation } from "../../Domain/ProductLineEngineering/Entities/ConfigurationInformation";
+import "./scope.css";
+import { v4 as uuidv4 } from "uuid";
 
 interface NewProductManagerProps {
   projectService: ProjectService;
-   onCloseAllModals?: () => void;
-   onProductCreated?: (productData: any) => void;
-   onProductDeleted?: (deletionData: any) => void;
-   onProductEdited?: (editData: any) => void;
-   onModelModified?: (modelData: any) => void;
-   onModelDeleted?: (deletionData: any) => void;
+  onCloseAllModals?: () => void;
+  onProductCreated?: (productData: any) => void;
+  onProductDeleted?: (deletionData: any) => void;
+  onProductEdited?: (editData: any) => void;
+  onModelModified?: (modelData: any) => void;
+  onModelDeleted?: (deletionData: any) => void;
   //onClose: () => void;
 }
 
-const NewProductManager: React.FC<NewProductManagerProps> = ({ projectService, onCloseAllModals, onProductCreated, onProductDeleted, onProductEdited, onModelModified, onModelDeleted }) => {
+const NewProductManager: React.FC<NewProductManagerProps> = ({
+  projectService,
+  onCloseAllModals,
+  onProductCreated,
+  onProductDeleted,
+  onProductEdited,
+  onModelModified,
+  onModelDeleted,
+}) => {
   // Estado para mostrar/ocultar el modal de edición de configuración (nuevo producto)
   const [showProductModal, setShowProductModal] = useState(false);
-  const [productName, setProductName] = useState('');
-  const [productImageUrl, setProductImageUrl] = useState('');
+  const [productName, setProductName] = useState("");
+  const [productImageUrl, setProductImageUrl] = useState("");
   // En este caso, usamos el listado de IDs de funcionalidades que están activas (Quantity = "1")
   const [selectedFeatureIds, setSelectedFeatureIds] = useState<string[]>([]);
   // Para edición de propiedades de un elemento
@@ -48,54 +56,60 @@ const NewProductManager: React.FC<NewProductManagerProps> = ({ projectService, o
 
   // Fuerza re-render en el componente (por ejemplo, para actualizar cambios en el modelo)
   const [, setModelVersion] = useState(0);
-  const forceUpdateModel = () => setModelVersion(v => v + 1);
+  const forceUpdateModel = () => setModelVersion((v) => v + 1);
 
   // al inicio de tu componente, tras tus otros useState…
-useEffect(() => {
-  if (showProductModal) {
-    // Si no hay NINGÚN elemento Material, creamos el root por defecto
-    const hasAnyMaterial = currentModel.elements.some(el => el.type === "Material");
-    if (!hasAnyMaterial) {
-      const newId = projectService.generateId();
-      const productLineName = projectService.getProductLineSelected().name;
-      // Propiedad Quantity = "1"
-      const qtyProp = new Property(
-        "Quantity", "1", "String",
-        undefined, undefined, undefined,
-        false, true, "", "", undefined,
-        0, 0, "", "1", null
+  useEffect(() => {
+    if (showProductModal) {
+      // Si no hay NINGÚN elemento Material, creamos el root por defecto
+      const hasAnyMaterial = currentModel.elements.some(
+        (el) => el.type === "Material",
       );
-      // Propiedad BoM_level = "Product (level 0)"
-      const levelProp = new Property(
-        "BoM_level", "Product (level 0)", "String",
-        undefined, undefined, undefined,
-        false, true, "", "", undefined,
-        0, 0, "", "Product (level 0)", null
-      );
-      const rootMaterial: Element = {
-        id: newId,
-        name: productLineName,
-        type: "Material",
-        x: 0, y: 0, width: 120, height: 50,
-        parentId: null,
-        properties: [qtyProp, levelProp],
-        sourceModelElements: [],
-        instanceOfId: null
-      };
-      currentModel.elements.push(rootMaterial);
-      // dispara el evento para que lo guarde/reporte
-      projectService.raiseEventCreatedElement(currentModel, rootMaterial);
-      forceUpdateModel();
+      if (!hasAnyMaterial) {
+        const newId = projectService.generateId();
+        const productLineName = projectService.getProductLineSelected().name;
+        // Propiedad Quantity = "1"
+        const qtyProp = new Property(
+          "Quantity",
+          "integer",
+          1,
+        );
+        // Propiedad BoM_level = "Product (level 0)"
+        const levelProp = new Property(
+          "BoM_level",
+          "string",
+          "Product (level 0)",
+        );
+        const rootMaterial: Element = {
+          id: newId,
+          name: productLineName,
+          type: "Material",
+          x: 0,
+          y: 0,
+          width: 120,
+          height: 50,
+          parentId: null,
+          properties: [qtyProp, levelProp],
+          sourceModelElements: [],
+          instanceOfId: null,
+        };
+        currentModel.elements.push(rootMaterial);
+        // dispara el evento para que lo guarde/reporte
+        projectService.raiseEventCreatedElement(currentModel, rootMaterial);
+        forceUpdateModel();
+      }
     }
-  }
-}, [showProductModal]);
+  }, [showProductModal]);
 
   // -----------------------------------------------------------------
   // Renderizado recursivo de la estructura de funcionalidades disponibles
   // -----------------------------------------------------------------
   const getChildElements = (parentId: string): Element[] => {
     return elements.filter((el: Element) =>
-      relationships.some((rel: Relationship) => rel.sourceId === parentId && rel.targetId === el.id)
+      relationships.some(
+        (rel: Relationship) =>
+          rel.sourceId === parentId && rel.targetId === el.id,
+      ),
     );
   };
 
@@ -107,8 +121,9 @@ useEffect(() => {
   function renderAvailableFunctionalities() {
     console.log("id del usuario: ", projectService.getUser());
     //console.log("id del usuario: ", projectService.user);
-    const rootElements = elements.filter((el: Element) =>
-      !relationships.some((rel: Relationship) => rel.targetId === el.id)
+    const rootElements = elements.filter(
+      (el: Element) =>
+        !relationships.some((rel: Relationship) => rel.targetId === el.id),
     );
     return (
       <ul className="hierarchical-list">
@@ -123,7 +138,6 @@ useEffect(() => {
     setShowOptionsForId((prev) => (prev === id ? null : id));
   }
 
-  
   /**
    * Versión recursiva, con <ul> anidado para los hijos.
    * Usamos <li> para cada elemento, y dentro un contenedor
@@ -150,15 +164,15 @@ useEffect(() => {
             <div className="node-toolbar">
               {!isSelected && (
                 <button
-                style={{
-                  marginLeft: "5px",
-                  border: "none",
-                  backgroundColor: "transparent",
-                  color: "#7aaf57"
-                }}
+                  style={{
+                    marginLeft: "5px",
+                    border: "none",
+                    backgroundColor: "transparent",
+                    color: "#7aaf57",
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log("elemento ", elem.id)
+                    console.log("elemento ", elem.id);
                     handleSelectFeature(elem.id);
                   }}
                   title="Enable functionality"
@@ -169,11 +183,11 @@ useEffect(() => {
               {isSelected && (
                 <>
                   <button
-                  style={{
-                    marginLeft: "5px",
-                    border: "none",
-                    backgroundColor: "transparent",
-                  }}
+                    style={{
+                      marginLeft: "5px",
+                      border: "none",
+                      backgroundColor: "transparent",
+                    }}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -184,12 +198,12 @@ useEffect(() => {
                     <MdEdit size={25} />
                   </button>
                   <button
-                  style={{
-                    marginLeft: "5px",
-                    border: "none",
-                    backgroundColor: "transparent",
-                    color:"#d56e5a"
-                  }}
+                    style={{
+                      marginLeft: "5px",
+                      border: "none",
+                      backgroundColor: "transparent",
+                      color: "#d56e5a",
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeselectFeature(elem.id);
@@ -201,11 +215,11 @@ useEffect(() => {
                 </>
               )}
               <button
-              style={{
-                marginLeft: "5px",
-                border: "none",
-                backgroundColor: "transparent",
-              }}
+                style={{
+                  marginLeft: "5px",
+                  border: "none",
+                  backgroundColor: "transparent",
+                }}
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -216,11 +230,11 @@ useEffect(() => {
                 <MdLibraryAdd size={25} />
               </button>
               <button
-              style={{
-                marginLeft: "5px",
-                border: "none",
-                backgroundColor: "transparent",
-              }}
+                style={{
+                  marginLeft: "5px",
+                  border: "none",
+                  backgroundColor: "transparent",
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteFunctionality(elem.id);
@@ -242,9 +256,6 @@ useEffect(() => {
     );
   };
 
-
-
-
   const handleConfirmAddSubFunctionality = () => {
     if (!selectedParentId || newSubName.trim() === "") {
       alert("Por favor, ingrese un nombre válido para la sub-funcionalidad.");
@@ -262,7 +273,7 @@ useEffect(() => {
     const newRel = createRelationshipContains(
       selectedParentId,
       newElement.id,
-      projectService
+      projectService,
     );
     currentModel.relationships.push(newRel);
 
@@ -272,28 +283,30 @@ useEffect(() => {
     // Dispara los eventos para notificar la creación y actualización
     projectService.raiseEventCreatedElement(currentModel, newElement);
     projectService.raiseEventUpdatedElement(currentModel, newElement);
-    projectService.saveProjectInServer(projectService.getProjectInformation(), null, null);
+    projectService.saveProjectInServer(
+      projectService.getProjectInformation(),
+      null,
+      null,
+    );
 
     // Notificar al componente padre sobre la modificación del modelo base
     if (onModelModified) {
       const modelData = {
-        type: 'FUNCTIONALITY_ADDED',
+        type: "FUNCTIONALITY_ADDED",
         newElement: newElement,
         newRelationship: newRel,
         parentId: selectedParentId,
         modelId: currentModel.id,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       onModelModified(modelData);
-    } 
+    }
 
     forceUpdateModel();
     setShowAddSubModal(false);
     setNewSubName("");
     setSelectedParentId(null);
-
   };
-
 
   // -----------------------------------------------------------------
   // Manejadores para seleccionar/deseleccionar funcionalidades
@@ -305,7 +318,7 @@ useEffect(() => {
   };
 
   const handleDeselectFeature = (id: string) => {
-    setSelectedFeatureIds(selectedFeatureIds.filter(fid => fid !== id));
+    setSelectedFeatureIds(selectedFeatureIds.filter((fid) => fid !== id));
   };
 
   // Para editar propiedades, guardamos el id de la funcionalidad a editar.
@@ -340,119 +353,112 @@ useEffect(() => {
     setSelectedParentId(parentId);
     setShowAddSubModal(true);
   };
-const handleUploadProductImage = (file: File) => {
-  const MAX_INPUT_SIZE = 1024 * 1024;    // 1 MB
-  const TARGET_SIZE = 500 * 1024;        // 500 KB
+  const handleUploadProductImage = (file: File) => {
+    const MAX_INPUT_SIZE = 1024 * 1024; // 1 MB
+    const TARGET_SIZE = 500 * 1024; // 500 KB
 
-  // Helper: load a File into an HTMLImageElement
-  const loadImage = (blob: Blob): Promise<HTMLImageElement> =>
-    new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = URL.createObjectURL(blob);
-    });
+    // Helper: load a File into an HTMLImageElement
+    const loadImage = (blob: Blob): Promise<HTMLImageElement> =>
+      new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = URL.createObjectURL(blob);
+      });
 
-  // Helper: draw the image at given width/height into a canvas and return dataURL at quality 0.9
-  const drawToCanvas = (img: HTMLImageElement, width: number, height: number) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(img, 0, 0, width, height);
-    return canvas;
-  };
-
-  // Helper: given an Image, repeatedly scale down by half until the dataURL length is below TARGET_SIZE
-  const compressUntilOkay = async (img: HTMLImageElement): Promise<string> => {
-    let width = img.width;
-    let height = img.height;
-    let dataURL: string;
-
-    // initial draw at full size & quality=0.9
-    let canvas = drawToCanvas(img, width, height);
-    dataURL = canvas.toDataURL("image/jpeg", 0.9);
-    while (dataURL.length > TARGET_SIZE * 1.37) {
-      // length ≈ base64 string size in bytes × 1.37 → rough conversion
-      width = Math.floor(width * 0.75);
-      height = Math.floor(height * 0.75);
-      canvas = drawToCanvas(img, width, height);
-      // you can also decrease quality if needed. try quality=0.8
-      dataURL = canvas.toDataURL("image/jpeg", 0.8);
-      // loop until small enough
-    }
-    return dataURL.split(",")[1]; // strip "data:image/jpeg;base64," prefix
-  };
-
-  const processFile = async () => {
-    try {
-      // If already smaller than 1 MB, skip compress step:
-      if (file.size <= MAX_INPUT_SIZE) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          const base64Data = result.includes(",") ? result.split(",")[1] : result;
-          finalizeUpload(base64Data);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        // Otherwise, load image, compress, then continue:
-        const img = await loadImage(file);
-        const compressedBase64 = await compressUntilOkay(img);
-        finalizeUpload(compressedBase64);
-      }
-    } catch (err) {
-      alert("Failed to process image. Please try a smaller file.");
-      console.error(err);
-    }
-  };
-
-  // After obtaining a base64 string < 500 KB, create element + Property
-  const finalizeUpload = (base64Data: string) => {
-    const newProductId = projectService.generateId();
-    const productImageProp = new Property(
-      "Product_image",   // name
-      base64Data,        // value
-      "Image",           // type
-      undefined,
-      undefined,
-      undefined,
-      false,
-      true,
-      "",
-      "",
-      undefined,
-      0,
-      0,
-      "",
-      base64Data, 
-      null
-    );
-
-    const newProduct: Element = {
-      id: newProductId,
-      name: "product image",
-      type: "Product",
-      x: 350,
-      y: 200,
-      width: 200,
-      height: 150,
-      parentId: null,
-      properties: [productImageProp],
-      sourceModelElements: [],
-      instanceOfId: null
+    // Helper: draw the image at given width/height into a canvas and return dataURL at quality 0.9
+    const drawToCanvas = (
+      img: HTMLImageElement,
+      width: number,
+      height: number,
+    ) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      return canvas;
     };
 
-    currentModel.elements.push(newProduct);
-    projectService.raiseEventCreatedElement(currentModel, newProduct);
-    projectService.raiseEventUpdatedElement(currentModel, newProduct);
-    forceUpdateModel();
+    // Helper: given an Image, repeatedly scale down by half until the dataURL length is below TARGET_SIZE
+    const compressUntilOkay = async (
+      img: HTMLImageElement,
+    ): Promise<string> => {
+      let width = img.width;
+      let height = img.height;
+      let dataURL: string;
+
+      // initial draw at full size & quality=0.9
+      let canvas = drawToCanvas(img, width, height);
+      dataURL = canvas.toDataURL("image/jpeg", 0.9);
+      while (dataURL.length > TARGET_SIZE * 1.37) {
+        // length ≈ base64 string size in bytes × 1.37 → rough conversion
+        width = Math.floor(width * 0.75);
+        height = Math.floor(height * 0.75);
+        canvas = drawToCanvas(img, width, height);
+        // you can also decrease quality if needed. try quality=0.8
+        dataURL = canvas.toDataURL("image/jpeg", 0.8);
+        // loop until small enough
+      }
+      return dataURL.split(",")[1]; // strip "data:image/jpeg;base64," prefix
+    };
+
+    const processFile = async () => {
+      try {
+        // If already smaller than 1 MB, skip compress step:
+        if (file.size <= MAX_INPUT_SIZE) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const result = e.target?.result as string;
+            const base64Data = result.includes(",")
+              ? result.split(",")[1]
+              : result;
+            finalizeUpload(base64Data);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // Otherwise, load image, compress, then continue:
+          const img = await loadImage(file);
+          const compressedBase64 = await compressUntilOkay(img);
+          finalizeUpload(compressedBase64);
+        }
+      } catch (err) {
+        alert("Failed to process image. Please try a smaller file.");
+        console.error(err);
+      }
+    };
+
+    // After obtaining a base64 string < 500 KB, create element + Property
+    const finalizeUpload = (base64Data: string) => {
+      const newProductId = projectService.generateId();
+      const productImageProp = new Property(
+        "Product_image", // name
+        "string", // type
+        base64Data, // value
+      );
+
+      const newProduct: Element = {
+        id: newProductId,
+        name: "product image",
+        type: "Product",
+        x: 350,
+        y: 200,
+        width: 200,
+        height: 150,
+        parentId: null,
+        properties: [productImageProp],
+        sourceModelElements: [],
+        instanceOfId: null,
+      };
+
+      currentModel.elements.push(newProduct);
+      projectService.raiseEventCreatedElement(currentModel, newProduct);
+      projectService.raiseEventUpdatedElement(currentModel, newProduct);
+      forceUpdateModel();
+    };
+
+    processFile();
   };
-
-  processFile();
-};
-
-
 
   const handleDeleteFunctionality = (featureId: string) => {
     // Array para almacenar los IDs del elemento a eliminar y todos sus descendientes.
@@ -463,7 +469,7 @@ const handleUploadProductImage = (file: File) => {
       idsToDelete.push(id);
       // Buscar relaciones cuyo source sea este id (los hijos directos)
       const childRels = currentModel.relationships.filter(
-        (rel: Relationship) => rel.sourceId === id
+        (rel: Relationship) => rel.sourceId === id,
       );
       childRels.forEach((rel) => {
         collectDescendantIds(rel.targetId);
@@ -475,30 +481,37 @@ const handleUploadProductImage = (file: File) => {
 
     // Elimina del modelo todos los elementos cuyos IDs estén en idsToDelete.
     currentModel.elements = currentModel.elements.filter(
-      (elem: Element) => !idsToDelete.includes(elem.id)
+      (elem: Element) => !idsToDelete.includes(elem.id),
     );
 
     // Elimina las relaciones que involucren alguno de esos elementos (como source o target).
     currentModel.relationships = currentModel.relationships.filter(
       (rel: Relationship) =>
-        !idsToDelete.includes(rel.sourceId) && !idsToDelete.includes(rel.targetId)
+        !idsToDelete.includes(rel.sourceId) &&
+        !idsToDelete.includes(rel.targetId),
     );
 
     // Actualiza la lista de funcionalidades seleccionadas (selectedFeatureIds)
-    setSelectedFeatureIds(selectedFeatureIds.filter((id: string) => !idsToDelete.includes(id)));
+    setSelectedFeatureIds(
+      selectedFeatureIds.filter((id: string) => !idsToDelete.includes(id)),
+    );
 
     // Dispara algún evento para notificar la actualización del modelo (puedes adaptar según tus necesidades)
     projectService.raiseEventUpdatedElement(currentModel, null);
-    projectService.saveProjectInServer(projectService.getProjectInformation(), null, null);
+    projectService.saveProjectInServer(
+      projectService.getProjectInformation(),
+      null,
+      null,
+    );
 
     // Notificar al componente padre sobre la eliminación colaborativa del modelo base
     if (onModelDeleted) {
       const deletionData = {
-        type: 'FUNCTIONALITY_DELETED_FROM_MODEL',
+        type: "FUNCTIONALITY_DELETED_FROM_MODEL",
         deletedIds: idsToDelete,
         rootFeatureId: featureId,
         modelId: currentModel.id,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       onModelDeleted(deletionData);
     }
@@ -506,7 +519,6 @@ const handleUploadProductImage = (file: File) => {
     // Forzamos el re-render para que se reflejen los cambios
     forceUpdateModel();
   };
-
 
   // -----------------------------------------------------------------
   // Funciones auxiliares para crear un nuevo "Material" y su relación
@@ -531,21 +543,8 @@ const handleUploadProductImage = (file: File) => {
       }
       return new Property(
         p.name,
-        defaultVal,
         p.type,
-        p.options,
-        p.linked_property,
-        p.linked_value,
-        false,
-        true,
-        p.comment,
-        p.possibleValues,
-        p.possibleValuesLinks,
-        p.minCardinality,
-        p.maxCardinality,
-        p.constraint,
         defaultVal,
-        p.autocompleteSource
       );
     });
     const newElement: Element = {
@@ -559,7 +558,7 @@ const handleUploadProductImage = (file: File) => {
       parentId: parentId,
       properties: newProps,
       sourceModelElements: [],
-      instanceOfId: null
+      instanceOfId: null,
     };
     return newElement;
   }
@@ -567,7 +566,7 @@ const handleUploadProductImage = (file: File) => {
   function createRelationshipContains(
     sourceId: string,
     targetId: string,
-    projectService: ProjectService
+    projectService: ProjectService,
   ): Relationship {
     const relId = projectService.generateId();
     return {
@@ -582,23 +581,10 @@ const handleUploadProductImage = (file: File) => {
       properties: [
         new Property(
           "Type",
+          "string",
           "Contains",
-          "String",
-          undefined,
-          undefined,
-          undefined,
-          false,
-          true,
-          "",
-          "Contains",
-          undefined,
-          0,
-          0,
-          "",
-          "Contains",
-          null
-        )
-      ]
+        ),
+      ],
     };
   }
 
@@ -630,11 +616,10 @@ const handleUploadProductImage = (file: File) => {
   };
 */
   const handleSaveProduct = () => {
-
     // Actualiza la propiedad "Quantity" de cada elemento Material en el modelo actual
     currentModel.elements.forEach((elem: Element) => {
       if (elem.type === "Material") {
-        const qProp = elem.properties.find(p => p.name === "Quantity");
+        const qProp = elem.properties.find((p) => p.name === "Quantity");
         if (qProp) {
           qProp.value = selectedFeatureIds.includes(elem.id) ? "1" : "0";
         }
@@ -643,10 +628,10 @@ const handleUploadProductImage = (file: File) => {
 
     // Construye el objeto de configuración usando la estructura requerida
     const configurationInformation = new ConfigurationInformation(
-      uuidv4(),                            // id (usamos el id actual para actualizar)
-      productName,                                  // config_name (y también se asigna al name)
-      projectService.getTreeIdItemSelected(),       // id_feature_model: se asume que es el id del modelo actual
-      projectService.project                        // project_json: el proyecto completo
+      uuidv4(), // id (usamos el id actual para actualizar)
+      productName, // config_name (y también se asigna al name)
+      projectService.getTreeIdItemSelected(), // id_feature_model: se asume que es el id del modelo actual
+      projectService.project, // project_json: el proyecto completo
     );
 
     // Define callbacks para el guardado
@@ -663,25 +648,29 @@ const handleUploadProductImage = (file: File) => {
     };
 
     // Llamamos a la función de guardado en el projectService
-    projectService.saveConfigurationInServer(configurationInformation, successCallback, errorCallback);
+    projectService.saveConfigurationInServer(
+      configurationInformation,
+      successCallback,
+      errorCallback,
+    );
 
     // Notificar al componente padre sobre la creación del producto
     if (onProductCreated) {
       const productData = {
-        type: 'PRODUCT_CREATED',
+        type: "PRODUCT_CREATED",
         configurationData: {
           id: configurationInformation.id,
           name: productName,
           config_name: productName,
           selectedFeatures: selectedFeatureIds,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         },
-        modelId: currentModel.id
+        modelId: currentModel.id,
       };
       onProductCreated(productData);
-    } 
+    }
 
-    setShowProductModal(false)
+    setShowProductModal(false);
     if (onCloseAllModals) {
       onCloseAllModals();
     }
@@ -718,7 +707,9 @@ const handleUploadProductImage = (file: File) => {
               <Form.Control
                 type="text"
                 value={productName}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setProductName(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setProductName(e.target.value)
+                }
               />
             </Form.Group>
             <Form.Group controlId="newProductImage">
@@ -736,60 +727,80 @@ const handleUploadProductImage = (file: File) => {
 
             <hr />
             <h5>Select functionalities (from the catalog)</h5>
-            <div style={{ maxHeight: '600px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px' }}>
+            <div
+              style={{
+                maxHeight: "600px",
+                overflowY: "auto",
+                border: "1px solid #ccc",
+                padding: "10px",
+              }}
+            >
               {renderAvailableFunctionalities()}
             </div>
             <hr />
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => {
+          <Button
+            variant="secondary"
+            onClick={() => {
               setShowProductModal(false);
               if (onCloseAllModals) onCloseAllModals();
             }}
->Cancel</Button>
-          <Button variant="primary" onClick={handleSaveProduct}>Save potential product</Button>
+          >
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSaveProduct}>
+            Save potential product
+          </Button>
         </Modal.Footer>
       </Modal>
 
-      {showEditFeatureModal && editingFeatureId && getFeatureById(editingFeatureId) && (
-  <EditFeatureModal
-    show={showEditFeatureModal}
-    feature={ { ...getFeatureById(editingFeatureId)! } }  // pasamos una copia (spread) para "congelar" el objeto
-    onClose={() => {
-      setShowEditFeatureModal(false);
-      setEditingFeatureId(null);
-    }}
-    onSave={(updatedFeature: Element) => {
-      const originalFeature = currentModel.elements.find((e: Element) => e.id === updatedFeature.id);
-      const index = currentModel.elements.findIndex((e: Element) => e.id === updatedFeature.id);
+      {showEditFeatureModal &&
+        editingFeatureId &&
+        getFeatureById(editingFeatureId) && (
+          <EditFeatureModal
+            show={showEditFeatureModal}
+            feature={{ ...getFeatureById(editingFeatureId)! }} // pasamos una copia (spread) para "congelar" el objeto
+            onClose={() => {
+              setShowEditFeatureModal(false);
+              setEditingFeatureId(null);
+            }}
+            onSave={(updatedFeature: Element) => {
+              const originalFeature = currentModel.elements.find(
+                (e: Element) => e.id === updatedFeature.id,
+              );
+              const index = currentModel.elements.findIndex(
+                (e: Element) => e.id === updatedFeature.id,
+              );
 
-      if (index > -1) {
-        currentModel.elements[index] = updatedFeature;
-        projectService.raiseEventUpdatedElement(currentModel, updatedFeature);
+              if (index > -1) {
+                currentModel.elements[index] = updatedFeature;
+                projectService.raiseEventUpdatedElement(
+                  currentModel,
+                  updatedFeature,
+                );
 
-        // Notificar al componente padre sobre la edición colaborativa
-        if (onProductEdited) {
-          const editData = {
-            type: 'FUNCTIONALITY_EDITED',
-            elementId: updatedFeature.id,
-            originalFeature: originalFeature,
-            updatedFeature: updatedFeature,
-            modelId: currentModel.id,
-            timestamp: Date.now()
-          };
-          onProductEdited(editData);
-        } 
+                // Notificar al componente padre sobre la edición colaborativa
+                if (onProductEdited) {
+                  const editData = {
+                    type: "FUNCTIONALITY_EDITED",
+                    elementId: updatedFeature.id,
+                    originalFeature: originalFeature,
+                    updatedFeature: updatedFeature,
+                    modelId: currentModel.id,
+                    timestamp: Date.now(),
+                  };
+                  onProductEdited(editData);
+                }
 
-        // Si es posible, evita llamar forceUpdateModel() inmediatamente, ya que puede reinicializar el render
-      }
-      setShowEditFeatureModal(false);
-      setEditingFeatureId(null);
-    }}
-  />
-)}
-
-
+                // Si es posible, evita llamar forceUpdateModel() inmediatamente, ya que puede reinicializar el render
+              }
+              setShowEditFeatureModal(false);
+              setEditingFeatureId(null);
+            }}
+          />
+        )}
 
       {showAddSubModal && (
         <Modal
@@ -800,7 +811,7 @@ const handleUploadProductImage = (file: File) => {
             setSelectedParentId(null);
           }}
           centered
-          backdrop="static"  // Evita que el modal se cierre al hacer click fuera
+          backdrop="static" // Evita que el modal se cierre al hacer click fuera
         >
           <Modal.Header closeButton>
             <Modal.Title>Add subfunctionality</Modal.Title>
@@ -841,7 +852,6 @@ const handleUploadProductImage = (file: File) => {
           </Modal.Footer>
         </Modal>
       )}
-
     </div>
   );
 };
