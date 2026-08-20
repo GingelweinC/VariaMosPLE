@@ -57,6 +57,11 @@ import AnnotationPanel from "../Annotation/AnnotationPanel";
 import HistoryPanel from "../HistoryProject/HistoryPanel";
 import AnnotationLayer from "../Annotation/NewAnnotationLayer";
 
+import {
+  HistoryActionType,
+  HistoryEntityType,
+} from "../../Domain/ProductLineEngineering/Enums/historyEnum";
+
 import { useGraphAwareness } from "./useGraphAwareness";
 import GraphAwareness from "./GraphAwareness";
 import { GraphHeader } from "./GraphHeader";
@@ -117,6 +122,7 @@ function GraphEditorContent({
 
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [selectedObject, setSelectedObject] = useState<any | null>(null);
+  const [backupObject, setBackupObject] = useState<any | null>(null);
   const [selectedObjectType, setSelectedObjectType] = useState<
     "element" | "reification" | "relationship" | null
   >(null);
@@ -170,14 +176,20 @@ function GraphEditorContent({
     annotationObserver,
   });
 
-  const { revertHistoryItem, loadProjectHistory, openHistoryPanel } =
-    useHistory({
-      projectService,
-      setModel,
-      syncModelChanges,
-      setHistoryRecords,
-      setShowHistoryPanel,
-    });
+  const {
+    revertHistoryItem,
+    loadProjectHistory,
+    openHistoryPanel,
+    registerHistoryEvent,
+    initializeHistorySync,
+    subscribeToHistoryChanges,
+  } = useHistory({
+    projectService,
+    setModel,
+    syncModelChanges,
+    setHistoryRecords,
+    setShowHistoryPanel,
+  });
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -192,6 +204,28 @@ function GraphEditorContent({
   useEffect(() => {
     loadAnnotations();
   }, [loadAnnotations]);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+
+    const setupHistorySync = async () => {
+      const initialized = await initializeHistorySync();
+
+      if (!initialized || cancelled) {
+        return;
+      }
+
+      unsubscribe = subscribeToHistoryChanges();
+    };
+
+    setupHistorySync();
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [initializeHistorySync, subscribeToHistoryChanges]);
 
   useEffect(() => {
     const handleSelectedUpdate = (itemSelected: string) => {
@@ -218,27 +252,25 @@ function GraphEditorContent({
       return;
     }
     if (!projectService.currentLanguage) {
-      showMessageModal("Error", "Language definition not found for model type: " + model.type);
+      showMessageModal(
+        "Error",
+        "Language definition not found for model type: " + model.type,
+      );
       return;
     }
 
-    setNodes(
-      [
-        ...model.elements.map((element) =>
-          convertElementToNode(
-            projectService.currentLanguage.Elements,
-            element,
-          ),
-        ),
+    setNodes([
+      ...model.elements.map((element) =>
+        convertElementToNode(projectService.currentLanguage.Elements, element),
+      ),
 
-        ...model.reifications.map((reification) =>
-          convertReificationToNode(
-            projectService.currentLanguage.Reifications,
-            reification,
-          ),
+      ...model.reifications.map((reification) =>
+        convertReificationToNode(
+          projectService.currentLanguage.Reifications,
+          reification,
         ),
-      ],
-    );
+      ),
+    ]);
     setEdges([
       ...model.relationships.map((relation) =>
         convertRelationToEdge(
@@ -258,31 +290,28 @@ function GraphEditorContent({
         ),
       ),
     ]);
-  }, [
-    model,
-    projectService.currentLanguage,
-  ]);
+  }, [model, projectService.currentLanguage]);
 
   function callExternalFunction(index: number): void {
     const efunction = projectService.externalFunctions[index];
 
     const selectedElementsIds = nodes
-      .filter(node => node.selected && node.type === "element")
-      .map(node => node.id);
+      .filter((node) => node.selected && node.type === "element")
+      .map((node) => node.id);
 
     const selectedRelationshipsIds = edges
-      .filter(edge => edge.selected)
-      .map(edge => edge.id);
+      .filter((edge) => edge.selected)
+      .map((edge) => edge.id);
 
     projectService.callExternalFuntion(
       efunction,
       null,
       selectedElementsIds,
-      selectedRelationshipsIds
+      selectedRelationshipsIds,
     );
   }
 
-    const openPropertiesModal = useCallback(
+  const openPropertiesModal = useCallback(
     (menu: {
       x: number;
       y: number;
@@ -294,11 +323,7 @@ function GraphEditorContent({
       }
 
       let object: any = null;
-      let objectType:
-        | "element"
-        | "reification"
-        | "relationship"
-        | null = null;
+      let objectType: "element" | "reification" | "relationship" | null = null;
 
       if (menu.type === "node") {
         const element = projectService.findModelElementById(
@@ -323,10 +348,9 @@ function GraphEditorContent({
       }
 
       if (menu.type === "edge") {
-        const relationship =
-          projectService.currentModel.relationships.find(
-            (relationship) => relationship.id === menu.id,
-          );
+        const relationship = projectService.currentModel.relationships.find(
+          (relationship) => relationship.id === menu.id,
+        );
 
         if (relationship) {
           object = relationship;
@@ -339,6 +363,7 @@ function GraphEditorContent({
       }
 
       setSelectedObject(structuredClone(object));
+      setBackupObject(structuredClone(object));
       setSelectedObjectType(objectType);
       setShowPropertiesModal(true);
     },
@@ -346,58 +371,90 @@ function GraphEditorContent({
   );
 
   const savePropertiesModal = useCallback(() => {
-  if (!selectedObject || !selectedObjectType) {
-    return;
-  }
+    if (!selectedObject || !selectedObjectType || !backupObject) {
+      return;
+    }
 
-  let target: any = null;
+    let target: any = null;
 
-  switch (selectedObjectType) {
-    case "element":
-      target = projectService.findModelElementById(
-        projectService.currentModel,
-        selectedObject.id,
-      );
-      break;
+    switch (selectedObjectType) {
+      case "element":
+        target = projectService.findModelElementById(
+          projectService.currentModel,
+          selectedObject.id,
+        );
+        break;
 
-    case "reification":
-      target = projectService.findModelReificationById(
-        projectService.currentModel,
-        selectedObject.id,
-      );
-      break;
+      case "reification":
+        target = projectService.findModelReificationById(
+          projectService.currentModel,
+          selectedObject.id,
+        );
+        break;
 
-    case "relationship":
-      target =
-        projectService.currentModel.relationships.find(
-          (relationship) =>
-            relationship.id === selectedObject.id,
-        ) ?? null;
-      break;
-  }
+      case "relationship":
+        target =
+          projectService.currentModel.relationships.find(
+            (relationship) => relationship.id === selectedObject.id,
+          ) ?? null;
+        break;
+    }
 
-  if (!target) {
-    return;
-  }
+    if (!target) {
+      return;
+    }
 
-  target.properties = structuredClone(
-    selectedObject.properties ?? [],
-  );
+    const oldValue = structuredClone(target);
+    const newValue = structuredClone(selectedObject);
 
-  syncModelChanges();
+    const changedFields = Object.keys(newValue).filter(
+      (key) => JSON.stringify(oldValue[key]) !== JSON.stringify(newValue[key]),
+    );
 
-  setShowPropertiesModal(false);
-  setSelectedObject(null);
-  setSelectedObjectType(null);
-}, [
-  selectedObject,
-  selectedObjectType,
-  projectService,
-  syncModelChanges,
-]);
+    if (changedFields.length > 0) {
+      Object.assign(target, newValue);
+
+      if (selectedObjectType !== "reification") {
+        const entityType =
+          selectedObjectType === "relationship"
+            ? HistoryEntityType.RELATIONSHIP
+            : selectedObjectType === "element"
+            ? HistoryEntityType.ELEMENT
+            : null;
+
+        registerHistoryEvent({
+          modelId: projectService.currentModel?.id,
+          actionType: HistoryActionType.ITEM_UPDATED,
+          entityType,
+          entityId: newValue.id,
+          entityName: newValue.name,
+          oldValue,
+          newValue,
+          description: `Updated ${selectedObjectType} "${
+            newValue.name
+          }": ${changedFields.join(", ")}`,
+        });
+      }
+
+      syncModelChanges();
+    }
+
+    setShowPropertiesModal(false);
+    setSelectedObject(null);
+    setBackupObject(null);
+    setSelectedObjectType(null);
+  }, [
+    selectedObject,
+    backupObject,
+    selectedObjectType,
+    projectService,
+    registerHistoryEvent,
+    syncModelChanges,
+  ]);
   const cancelPropertiesModal = useCallback(() => {
     setShowPropertiesModal(false);
     setSelectedObject(null);
+    setBackupObject(null);
     setSelectedObjectType(null);
   }, []);
 
@@ -451,11 +508,10 @@ function GraphEditorContent({
           } else if (node.type === "reification") {
             const reification = convertNodeToReification(node);
 
-            const modelReification =
-              projectService.findModelReificationById(
-                projectService.currentModel,
-                reification.id,
-              );
+            const modelReification = projectService.findModelReificationById(
+              projectService.currentModel,
+              reification.id,
+            );
 
             if (modelReification) {
               Object.assign(modelReification, reification);
@@ -509,11 +565,10 @@ function GraphEditorContent({
           } else if (node.type === "reification") {
             const reification = convertNodeToReification(node);
 
-            const modelReification =
-              projectService.findModelReificationById(
-                projectService.currentModel,
-                reification.id,
-              );
+            const modelReification = projectService.findModelReificationById(
+              projectService.currentModel,
+              reification.id,
+            );
 
             if (modelReification) {
               modelReification.width = width;
@@ -539,10 +594,40 @@ function GraphEditorContent({
           }
 
           if (node.type === "element") {
-            projectService.removeModelElementById(
+            const element = projectService.findModelElementById(
               projectService.currentModel,
               node.id,
             );
+
+            if (element) {
+              const relatedRelationships =
+                projectService.currentModel.relationships.filter(
+                  (relationship) =>
+                    relationship.sourceId === element.id ||
+                    relationship.targetId === element.id,
+                );
+
+              registerHistoryEvent({
+                modelId: projectService.currentModel?.id,
+                actionType: HistoryActionType.ITEM_DELETED,
+                entityType: HistoryEntityType.ELEMENT,
+                entityId: element.id,
+                entityName: element.name,
+                oldValue: {
+                  ...structuredClone(element),
+                  relatedRelationships: structuredClone(relatedRelationships),
+                },
+                newValue: null,
+                description: `Deleted element "${element.name}"`,
+              });
+
+              projectService.removeModelElementById(
+                projectService.currentModel,
+                node.id,
+              );
+
+              modelChanged = true;
+            }
           } else if (node.type === "reification") {
             projectService.currentModel.reifications =
               projectService.currentModel.reifications.filter(
@@ -573,7 +658,14 @@ function GraphEditorContent({
         syncModelChanges();
       }
     },
-    [nodes, projectService, model?.id, syncModelChanges, updateAction],
+    [
+      nodes,
+      projectService,
+      model?.id,
+      syncModelChanges,
+      updateAction,
+      registerHistoryEvent,
+    ],
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
@@ -597,21 +689,38 @@ function GraphEditorContent({
           }
 
           if (edge.type === "relation") {
-            projectService.removeModelRelationshipById(
-              projectService.currentModel,
-              edge.id,
+            const relationship = projectService.currentModel.relationships.find(
+              (relationship) => relationship.id === edge.id,
             );
 
-            modelChanged = true;
+            if (relationship) {
+              registerHistoryEvent({
+                modelId: projectService.currentModel?.id,
+                actionType: HistoryActionType.ITEM_DELETED,
+                entityType: HistoryEntityType.RELATIONSHIP,
+                entityId: relationship.id,
+                entityName: relationship.name,
+                oldValue: structuredClone(relationship),
+                newValue: null,
+                description: `Deleted relationship "${relationship.name}"`,
+              });
+
+              projectService.removeModelRelationshipById(
+                projectService.currentModel,
+                edge.id,
+              );
+
+              modelChanged = true;
+            }
+
             return;
           }
 
           if (edge.type === "reificationEndpoint") {
-            const reification =
-              projectService.findModelReificationById(
-                projectService.currentModel,
-                edge.source,
-              );
+            const reification = projectService.findModelReificationById(
+              projectService.currentModel,
+              edge.source,
+            );
 
             if (!reification) {
               return;
@@ -640,7 +749,7 @@ function GraphEditorContent({
         syncModelChanges();
       }
     },
-    [projectService, syncModelChanges],
+    [projectService, syncModelChanges, registerHistoryEvent],
   );
 
   const handleMouseMove = useCallback(
@@ -723,19 +832,31 @@ function GraphEditorContent({
   const onConnect: OnConnect = useCallback(
     (params) => {
       if (currentRelationType !== null) {
-        const newRelation = Relationship.fromRelationType(currentRelationType, params.source, params.target)
+        const newRelation = Relationship.fromRelationType(
+          currentRelationType,
+          params.source,
+          params.target,
+        );
 
         projectService.currentModel.relationships.push(newRelation);
+
+        registerHistoryEvent({
+          modelId: projectService.currentModel?.id,
+          actionType: HistoryActionType.ITEM_CREATED,
+          entityType: HistoryEntityType.RELATIONSHIP,
+          entityId: newRelation.id,
+          entityName: newRelation.name,
+          oldValue: null,
+          newValue: structuredClone(newRelation),
+          description: `Created relationship "${newRelation.name}"`,
+        });
 
         const newEdge = convertRelationToEdge(
           projectService.currentLanguage.Relationships,
           newRelation,
         );
 
-        setEdges((edgesSnapshot) => [
-          newEdge,
-          ...edgesSnapshot,
-        ]);
+        setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
 
         setCurrentRelationType(null);
         setCurrentEndpointType(null);
@@ -746,10 +867,9 @@ function GraphEditorContent({
       }
 
       if (currentEndpointType) {
-        const reification =
-          projectService.currentModel.reifications.find(
-            (reification) => reification.id === params.source,
-          );
+        const reification = projectService.currentModel.reifications.find(
+          (reification) => reification.id === params.source,
+        );
 
         if (!reification) {
           return;
@@ -760,10 +880,7 @@ function GraphEditorContent({
         );
 
         if (!endpoint) {
-          endpoint = new Endpoint(
-            currentEndpointType.uuid,
-            [],
-          );
+          endpoint = new Endpoint(currentEndpointType.uuid, []);
 
           reification.endpoints.push(endpoint);
         }
@@ -780,10 +897,7 @@ function GraphEditorContent({
         const newEdge = newEdges.at(-1);
 
         if (newEdge) {
-          setEdges((edgesSnapshot) => [
-            newEdge,
-            ...edgesSnapshot,
-          ]);
+          setEdges((edgesSnapshot) => [newEdge, ...edgesSnapshot]);
         }
 
         setCurrentEndpointType(null);
@@ -798,6 +912,7 @@ function GraphEditorContent({
       syncModelChanges,
       setCurrentRelationType,
       setCurrentEndpointType,
+      registerHistoryEvent,
     ],
   );
 
@@ -839,12 +954,25 @@ function GraphEditorContent({
               edges={edges}
               externalFunctions={projectService.externalFunctions}
               onDelete={() => {
-                setNodes((nodesSnapshot) =>
-                  nodesSnapshot.filter((node) => node.id !== contextMenu.id),
-                );
-                setEdges((edgesSnapshot) =>
-                  edgesSnapshot.filter((edge) => edge.id !== contextMenu.id),
-                );
+                if (!contextMenu.id) {
+                  return;
+                }
+                if (contextMenu.type === "node") {
+                  onNodesChange([
+                    {
+                      type: "remove",
+                      id: contextMenu.id,
+                    },
+                  ]);
+                }
+                if (contextMenu.type === "edge") {
+                  onEdgesChange([
+                    {
+                      type: "remove",
+                      id: contextMenu.id,
+                    },
+                  ]);
+                }
                 setContextMenu(null);
               }}
               onProperties={() => {
@@ -852,10 +980,7 @@ function GraphEditorContent({
                 setContextMenu(null);
               }}
               onAddComment={() => {
-                createAnnotationFromContext(
-                  contextMenu.x,
-                  contextMenu.y,
-                );
+                createAnnotationFromContext(contextMenu.x, contextMenu.y);
 
                 setContextMenu(null);
               }}
@@ -912,14 +1037,26 @@ function GraphEditorContent({
             projectService.currentLanguage.Elements,
             element,
           );
-
           projectService.currentModel.elements.push(element);
           projectService.raiseEventCreatedElement(
             projectService.currentModel,
             element,
           );
 
+          registerHistoryEvent({
+            modelId: projectService.currentModel?.id,
+            actionType: HistoryActionType.ITEM_CREATED,
+            entityType: HistoryEntityType.ELEMENT,
+            entityId: element.id,
+            entityName: element.name,
+            oldValue: null,
+            newValue: structuredClone(element),
+            description: `Created element "${element.name}"`,
+          });
+
           setNodes((nodesSnapshot) => [...nodesSnapshot, node]);
+
+          syncModelChanges();
         }}
         addReification={(reification: Reification) => {
           const node = convertReificationToNode(
@@ -932,77 +1069,70 @@ function GraphEditorContent({
         }}
       />
       <div>
-          <Modal
-            show={showPropertiesModal}
-            onHide={cancelPropertiesModal}
-            size="lg"
-            centered
-          >
-            <Modal.Header closeButton>
-              <Modal.Title>
-                Properties
-              </Modal.Title>
-            </Modal.Header>
+        <Modal
+          show={showPropertiesModal}
+          onHide={cancelPropertiesModal}
+          size="lg"
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Properties</Modal.Title>
+          </Modal.Header>
 
-            <Modal.Body>
-              <div style={{ maxHeight: "65vh", overflow: "auto" }}>
-                <PropertiesModal
-                  item={selectedObject}
-                  onPropertiesChange={(properties) => {
-                    setSelectedObject((currentObject) =>
-                      currentObject
-                        ? {
-                            ...currentObject,
-                            properties,
-                          }
-                        : null,
-                    );
-                  }}
-                />
-              </div>
-            </Modal.Body>
+          <Modal.Body>
+            <div style={{ maxHeight: "65vh", overflow: "auto" }}>
+              <PropertiesModal
+                item={selectedObject}
+                onPropertiesChange={(properties) => {
+                  setSelectedObject((currentObject) =>
+                    currentObject
+                      ? {
+                          ...currentObject,
+                          properties,
+                        }
+                      : null,
+                  );
+                }}
+              />
+            </div>
+          </Modal.Body>
 
-            <Modal.Footer>
-              <Button
-                variant="primary"
-                onClick={savePropertiesModal}
-              >
-                Save
-              </Button>
+          <Modal.Footer>
+            <Button variant="primary" onClick={savePropertiesModal}>
+              Save
+            </Button>
 
-              <Button
-                variant="secondary"
-                onClick={cancelPropertiesModal}
-              >
-                Cancel
-              </Button>
-            </Modal.Footer>
-          </Modal>
-        </div>
-        <div>
-          <Modal
-            show={showMessageModal}
-            onHide={() => setShowMessageModal(false)}
-            size="lg"
-            centered
-          >
-            <Modal.Header closeButton>
-              <Modal.Title>
-                {messageModalTitle}
-              </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <div style={{ maxHeight: "65vh", overflow: "auto" }}>
-                <p>{messageModalContent}</p>
-              </div>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="primary" onClick={() => setShowMessageModal(false)}>
-                Close
-              </Button>
-            </Modal.Footer>
-          </Modal>
-        </div>
+            <Button variant="secondary" onClick={cancelPropertiesModal}>
+              Cancel
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </div>
+      <div>
+        <Modal
+          show={showMessageModal}
+          onHide={() => setShowMessageModal(false)}
+          size="lg"
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>{messageModalTitle}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div style={{ maxHeight: "65vh", overflow: "auto" }}>
+              <p>{messageModalContent}</p>
+            </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="primary"
+              onClick={() => setShowMessageModal(false)}
+            >
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </div>
 
       <HistoryPanel
         show={showHistoryPanel}
