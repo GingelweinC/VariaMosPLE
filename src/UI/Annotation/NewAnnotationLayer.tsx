@@ -352,12 +352,7 @@ export default function AnnotationLayer({
           },
         };
 
-        onUpdate(id, updatedAnnotation);
-
-        /*
-         * The browser will emit a click after mouseup.
-         * Ignore that click because this interaction was a drag.
-         */
+        onUpdate(id, updatedAnnotation)
         suppressNextClickRef.current = true;
       }
     }
@@ -369,12 +364,6 @@ export default function AnnotationLayer({
       x: 0,
       y: 0,
     };
-
-    /*
-     * Do NOT clear dragPreview here.
-     * It stays visible until annotations contains
-     * the persisted position.
-     */
   }, [annotations, onUpdate]);
 
   useEffect(() => {
@@ -393,11 +382,6 @@ export default function AnnotationLayer({
     };
   }, [handleMouseMove, handleMouseUp]);
 
-  /*
-   * Remove the visual drag preview only after
-   * the actual annotation has reached the same
-   * Flow position.
-   */
   useEffect(() => {
     const preview = dragPreview;
 
