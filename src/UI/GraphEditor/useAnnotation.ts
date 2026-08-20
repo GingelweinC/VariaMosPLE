@@ -7,7 +7,7 @@ import {
   removeAnnotation,
   observeAnnotations,
 } from "../../DataProvider/Services/collab/annotationCollaborationService";
-
+import { useReactFlow } from "@xyflow/react";
 interface AnnotationRecord {
   id: string;
   [key: string]: any;
@@ -32,6 +32,7 @@ export function useAnnotationHandlers({
   setAnnotationPanel,
   annotationObserver,
 }: UseAnnotationHandlersProps) {
+  const { screenToFlowPosition } = useReactFlow();
   const normalizeAnnotationRecord = useCallback((item: any) => {
     if (!item) {
       return null;
@@ -306,6 +307,35 @@ export function useAnnotationHandlers({
     ]
   );
 
+  
+    const createAnnotationFromContext = useCallback(
+    (screenX: number, screenY: number) => {
+      const projectId = projectService.getProject()?.id;
+      const modelId = model?.id;
+
+      if (!projectId || !modelId) {
+        return;
+      }
+
+      const position = screenToFlowPosition({
+        x: screenX,
+        y: screenY,
+      });
+
+      setPendingAnnotation({
+        projectId,
+        modelId,
+        position,
+      });
+    },
+    [
+      projectService,
+      model,
+      screenToFlowPosition,
+      setPendingAnnotation,
+    ],
+  );
+
   const closeAnnotationPanel = useCallback(() => {
     setAnnotationPanel(false);
   }, [setAnnotationPanel]);
@@ -323,6 +353,7 @@ export function useAnnotationHandlers({
     deleteAnnotation,
     resolveAnnotation,
     unresolveAnnotation,
+    createAnnotationFromContext,
     closeAnnotationPanel,
     openAnnotationPanel,
   };
