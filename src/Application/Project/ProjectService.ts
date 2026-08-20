@@ -339,14 +339,33 @@ export default class ProjectService {
     this.selectedModelListeners[listener] = null;
   }
 
-  async raiseEventSelectedModel(model: Model | undefined) {
-    if (model) {
-      let me = this;
-      me._currentModel = model;
-      me._currentLanguage = await this.languageUseCases.getFullLanguageById(model.languageId);
-      let e = new SelectedModelEventArg(me, model);
+  async raiseEventSelectedModel(model: Model | null | undefined) {
+    const me = this;
+
+    if (!model) {
+      me._currentModel = null;
+
       for (let index = 0; index < me.selectedModelListeners.length; index++) {
-        let callback = this.selectedModelListeners[index];
+        const callback = me.selectedModelListeners[index];
+
+        if (callback) {
+          callback(null);
+        }
+      }
+
+      return;
+    }
+
+    me._currentModel = model;
+    me._currentLanguage =
+      await this.languageUseCases.getFullLanguageById(model.languageId);
+
+    const e = new SelectedModelEventArg(me, model);
+
+    for (let index = 0; index < me.selectedModelListeners.length; index++) {
+      const callback = me.selectedModelListeners[index];
+
+      if (callback) {
         callback(e);
       }
     }
@@ -825,12 +844,45 @@ export default class ProjectService {
       this._project,
       deletedItemId
     );
-    // Solo cerrar el editor si el modelo eliminado es el que está actualmente abierto
     if (deletedItemId === currentlyOpenModelId) {
-      this.raiseEventUpdateProject(this._project, null);
-    } else {
-      this.raiseEventUpdateProject(this._project, currentlyOpenModelId);
+      this.raiseEventSelectedModel(null);
     }
+
+    this.raiseEventUpdateProject(
+      this._project,
+      deletedItemId === currentlyOpenModelId
+        ? null
+        : currentlyOpenModelId
+    );
+  }
+  
+  deleteModelById(modelId: string) {
+    const currentlyOpenModelId = this.getCurrentlyOpenModelId();
+
+    const previousId = this.treeIdItemSelected;
+    const previousType = this.treeItemSelected;
+
+    this.treeItemSelected = "model";
+    this.treeIdItemSelected = modelId;
+
+    this._project = this.projectUseCases.deleteItemProject(
+      this._project,
+      modelId
+    );
+
+    this.treeItemSelected = previousType;
+    this.treeIdItemSelected = previousId;
+
+    if (modelId === currentlyOpenModelId) {
+      this.raiseEventSelectedModel(null);
+    }
+
+    this.raiseEventUpdateProject(
+      this._project,
+      modelId === currentlyOpenModelId
+        ? null
+        : currentlyOpenModelId
+    );
   }
 
   async refreshLanguageList(): Promise<void> {

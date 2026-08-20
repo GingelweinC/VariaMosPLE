@@ -181,6 +181,20 @@ function GraphEditorContent({
   }, [loadAnnotations]);
 
   useEffect(() => {
+    const handleSelectedUpdate = (itemSelected: string) => {
+      if (itemSelected === "model") {
+        setModel(projectService.currentModel);
+      }
+    };
+
+    projectService.addUpdateSelectedListener(handleSelectedUpdate);
+
+    return () => {
+      projectService.removeUpdateSelectedListener(handleSelectedUpdate);
+    };
+  }, [projectService]);
+
+  useEffect(() => {
   if (!model || !projectService.currentLanguage) {
     return;
   }
@@ -225,6 +239,25 @@ function GraphEditorContent({
     model,
     projectService.currentLanguage,
   ]);
+
+  function callExternalFunction(index: number): void {
+    const efunction = projectService.externalFunctions[index];
+
+    const selectedElementsIds = nodes
+      .filter(node => node.selected && node.type === "element")
+      .map(node => node.id);
+
+    const selectedRelationshipsIds = edges
+      .filter(edge => edge.selected)
+      .map(edge => edge.id);
+
+    projectService.callExternalFuntion(
+      efunction,
+      null,
+      selectedElementsIds,
+      selectedRelationshipsIds
+    );
+  }
 
   const nodeTypes: NodeTypes = {
     element: ElementNode,
@@ -686,9 +719,8 @@ function GraphEditorContent({
                 setContextMenu(null);
               }}
               onExternalFunction={(index) => {
+                callExternalFunction(index);
                 setContextMenu(null);
-
-                // ton code
               }}
             />
           )}

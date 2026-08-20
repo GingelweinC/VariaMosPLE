@@ -776,36 +776,17 @@ class TreeExplorer extends Component<Props, State> {
 
   // Manejar eliminar modelo remoto
   handleRemoteDeleteModel(modelData: any) {
-    try {
-      // Usar la función mejorada de búsqueda
-      const model = this.props.projectService.findModelById(this.props.projectService.project, modelData.id);
+  const model = this.props.projectService.findModelById(
+    this.props.projectService.project,
+    modelData.id
+  );
 
-      if (model) {
-        // Usar la lógica existente de eliminación del ProjectService
-        // Guardar el ID seleccionado actual para restaurarlo después
-        const previousSelectedId = this.props.projectService.getTreeIdItemSelected();
-        const previousSelectedType = this.props.projectService.getTreeItemSelected();
-
-        // Temporalmente establecer el modelo como seleccionado usando el método público
-        this.props.projectService.setTreeItemSelected("model");
-        // Acceder directamente a la propiedad privada temporalmente para la eliminación
-        (this.props.projectService as any).treeIdItemSelected = modelData.id;
-
-        // Usar el método público deleteItemProject que maneja todo internamente
-        this.props.projectService.deleteItemProject();
-
-        // Restaurar la selección anterior
-        this.props.projectService.setTreeItemSelected(previousSelectedType);
-        (this.props.projectService as any).treeIdItemSelected = previousSelectedId;
-
-      } 
-    } catch (error) {
-      console.error(`Error eliminando modelo remoto:`, error);
-    }
-
-    // Forzar actualización de la UI
-    this.forceUpdate();
+  if (!model) {
+    return;
   }
+
+  this.props.projectService.deleteModelById(modelData.id);
+}
 
   // Manejar editar elemento remoto
   handleRemoteEditItem(itemData: any) {
