@@ -13,10 +13,13 @@ import { Element } from "../../Domain/ProductLineEngineering/Entities/Element";
 import { useEffect } from "react";
 import { useConnectionContext } from "./ConnectionContext";
 
-export type ElementNodeType = Node<{
-  element: Element;
-  style: React.CSSProperties;
-}, "element">;
+export type ElementNodeType = Node<
+  {
+    element: Element;
+    style: React.CSSProperties;
+  },
+  "element"
+>;
 
 export default function ElementNode({
   id,
@@ -76,11 +79,7 @@ export default function ElementNode({
         position={Position.Bottom}
       />
 
-      <NodeResizer
-        isVisible={selected}
-        minWidth={20}
-        minHeight={20}
-      />
+      <NodeResizer isVisible={selected} minWidth={20} minHeight={20} />
 
       <div className="element-node-title">{element.name}</div>
 
@@ -88,18 +87,15 @@ export default function ElementNode({
         .filter((p) => p.display === true)
         .map((p) => (
           <div className="element-node-property" key={p.name}>
-            {p.name} = {p.value? p.value : "?"}
+            {p.name} = {p.value === undefined ? "?" : p.value.toString()}
           </div>
         ))}
     </div>
   );
 }
-export function convertElementToNode(
-  elementTypes: any[],
-  element: Element,
-) {
+export function convertElementToNode(elementTypes: any[], element: Element) {
   const elementType = elementTypes.find(
-    (elementType) => elementType.uuid === element.type
+    (elementType) => elementType.uuid === element.type,
   );
 
   return {

@@ -16,8 +16,11 @@ import {
   faHammer,
   faFolder,
   faFloppyDisk,
+  faSquarePollVertical,
+  faPlay,
 } from "@fortawesome/free-solid-svg-icons";
 import reasoningService from "../../Application/Reasoning/reasoningService";
+import ResultsModal from "./ResultsModal";
 
 export interface ReasoningPanelProps {
   projectService: ProjectService;
@@ -33,6 +36,8 @@ export default function ReasoningPanel({
 
   // Request
   const [solver, setSolver] = useState<string>(undefined);
+
+  const [showResults, setShowResults] = useState<boolean>(false);
 
   return (
     <div className="reasoning-panel">
@@ -134,11 +139,11 @@ export default function ReasoningPanel({
             </Button>
           </OverlayTrigger>
         </InputGroup>
-        <Button
-          className="w-100"
-          onClick={() => reasoningService.execute(query, solver)}
-        >
-          Execute
+        <Button onClick={() => reasoningService.execute(query, solver)}>
+          <FontAwesomeIcon icon={faPlay} /> Execute
+        </Button>
+        <Button onClick={() => setShowResults(true)}>
+          <FontAwesomeIcon icon={faSquarePollVertical} /> Results
         </Button>
       </div>
 
@@ -147,7 +152,12 @@ export default function ReasoningPanel({
         show={showQueryBuilder}
         setShow={setShowQueryBuilder}
         setQuery={setQuery}
-      ></QueryBuilderModal>
+      />
+      <ResultsModal
+        show={showResults}
+        setShow={setShowResults}
+        currentModel={projectService.currentModel}
+      />
     </div>
   );
 }

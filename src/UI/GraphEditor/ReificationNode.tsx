@@ -67,18 +67,16 @@ export default function ReificationNode({
         />
       ))}
 
-      <NodeResizer
-        isVisible={selected}
-        minWidth={20}
-        minHeight={20}
-      />
+      <NodeResizer isVisible={selected} minWidth={20} minHeight={20} />
 
       <div className="reification-node-title">{reification.name}</div>
-      {reification.properties.map((p) => (
-        <div className="reification-node-property" key={p.name}>
-          {p.name} = {p.value}
-        </div>
-      ))}
+      {reification.properties
+        .filter((p) => p.display === true)
+        .map((p) => (
+          <div className="reification-node-property" key={p.name}>
+            {p.name} = {p.value === undefined ? "?" : p.value.toString()}
+          </div>
+        ))}
     </div>
   );
 }
