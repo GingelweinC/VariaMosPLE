@@ -548,13 +548,10 @@ const Chatbot: React.FC<ChatbotProps> = ({ projectService }) => {
   const [log, setLog] = useState<string[]>([]);
   const addLog = (s: string) => setLog(prev => [...prev, s]);
   const lastModelIdRef = useRef<string | null>(null);
-  console.log("[CHATBOT] Chatbot render", { phase, languageId, selectedModel, thread });
 
   // Vinculación por props (si llega)
   useEffect(() => {
-    console.log("[CHATBOT] useEffect: projectService");
     if (!projectService) return;
-    console.log("[CHATBOT] useEffect: projectService provided");
     setPs(projectService);
     try { projectService.refreshLanguageList?.(); } catch { }
     const langs: Language[] = Array.isArray(projectService.languages) ? projectService.languages : [];
@@ -563,9 +560,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ projectService }) => {
 
   // Fallback a window.projectService si no llegó por props
   useEffect(() => {
-    console.log("[CHATBOT] useEffect: attach to window.projectService");
     if (projectService) return;
-    console.log("[CHATBOT] useEffect: projectService not provided, trying window.projectService");
     const tryAttach = () => {
       const svc = (window as any).projectService;
       if (!svc) return false;

@@ -108,7 +108,6 @@ export const calculateModelDiff = (
       diff.relationshipsRemoved.push(id);
     }
   });
-  console.log("Calculated model diff", diff);
   return diff;
 };
 
