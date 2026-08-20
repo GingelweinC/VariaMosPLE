@@ -63,7 +63,7 @@ import { GraphHeader } from "./GraphHeader";
 import { useAnnotationHandlers } from "./useAnnotation";
 import { useHistory } from "./useHistory";
 import { useModelSynchronization } from "./useModelSynchronization";
-
+import ContextMenu from "./ContextMenu";
 export default function GraphEditor({
   projectService,
 }: Readonly<{
@@ -75,6 +75,7 @@ export default function GraphEditor({
     </ConnectingContextProvider>
   );
 }
+
 function GraphEditorContent({
   projectService,
 }: Readonly<{
@@ -104,13 +105,19 @@ function GraphEditorContent({
     }>
   >([]);
 
+  const graphContainerRef = useRef<HTMLDivElement>(null);
   const [model, setModel] = useState<Model>(projectService.currentModel);
 
   const annotationObserver = useRef<(() => void) | null>(null);
-  const graphContainerRef = useRef<HTMLDivElement>(null);
-
   const [annotationRecords, setAnnotationRecords] = useState<any[]>([]);
   const [pendingAnnotation, setPendingAnnotation] = useState<any>(null);
+
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    type: "pane" | "node" | "edge";
+    id?: string;
+  } | null>(null);
 
   useEffect(() => {
     const projectInfo = projectService.getProjectInformation();
@@ -137,6 +144,7 @@ function GraphEditorContent({
     deleteAnnotation,
     resolveAnnotation,
     unresolveAnnotation,
+    createAnnotationFromContext,
     openAnnotationPanel,
     closeAnnotationPanel,
   } = useAnnotationHandlers({
@@ -172,12 +180,10 @@ function GraphEditorContent({
     loadAnnotations();
   }, [loadAnnotations]);
 
-    useEffect(() => {
-    if (!model || !projectService.currentLanguage) {
-      return;
-    }
-
-    console.log("Loading model", model);
+  useEffect(() => {
+  if (!model || !projectService.currentLanguage) {
+    return;
+  }
 
     setNodes(
       [
@@ -396,71 +402,71 @@ function GraphEditorContent({
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
-  (changes) => {
-    let modelChanged = false;
+    (changes) => {
+      let modelChanged = false;
 
-    setEdges((edgesSnapshot) => {
-      const updatedEdges = applyEdgeChanges(changes, edgesSnapshot);
+      setEdges((edgesSnapshot) => {
+        const updatedEdges = applyEdgeChanges(changes, edgesSnapshot);
 
-      changes.forEach((change) => {
-        if (change.type !== "remove") {
-          return;
-        }
+        changes.forEach((change) => {
+          if (change.type !== "remove") {
+            return;
+          }
 
-        const edge = edgesSnapshot.find(
-          (currentEdge) => currentEdge.id === change.id,
-        );
-
-        if (!edge) {
-          return;
-        }
-
-        if (edge.type === "relation") {
-          projectService.removeModelRelationshipById(
-            projectService.currentModel,
-            edge.id,
+          const edge = edgesSnapshot.find(
+            (currentEdge) => currentEdge.id === change.id,
           );
 
-          modelChanged = true;
-          return;
-        }
+          if (!edge) {
+            return;
+          }
 
-        if (edge.type === "reificationEndpoint") {
-          const reification =
-            projectService.findModelReificationById(
+          if (edge.type === "relation") {
+            projectService.removeModelRelationshipById(
               projectService.currentModel,
-              edge.source,
+              edge.id,
             );
 
-          if (!reification) {
+            modelChanged = true;
             return;
           }
 
-          const endpoint = reification.endpoints.find(
-            (endpoint) => endpoint.id === edge.sourceHandle,
-          );
+          if (edge.type === "reificationEndpoint") {
+            const reification =
+              projectService.findModelReificationById(
+                projectService.currentModel,
+                edge.source,
+              );
 
-          if (!endpoint) {
-            return;
+            if (!reification) {
+              return;
+            }
+
+            const endpoint = reification.endpoints.find(
+              (endpoint) => endpoint.id === edge.sourceHandle,
+            );
+
+            if (!endpoint) {
+              return;
+            }
+
+            endpoint.elements = endpoint.elements.filter(
+              (elementId) => elementId !== edge.target,
+            );
+
+            modelChanged = true;
           }
+        });
 
-          endpoint.elements = endpoint.elements.filter(
-            (elementId) => elementId !== edge.target,
-          );
-
-          modelChanged = true;
-        }
+        return updatedEdges;
       });
 
-      return updatedEdges;
-    });
-
-    if (modelChanged) {
-      syncModelChanges();
-    }
-  },
-  [projectService, syncModelChanges],
-);
+      if (modelChanged) {
+        syncModelChanges();
+      }
+    },
+    [projectService, syncModelChanges],
+  );
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent) => {
@@ -472,6 +478,51 @@ function GraphEditorContent({
       updateCursor(position.x, position.y);
     },
     [screenToFlowPosition, updateCursor],
+  );
+
+  const handlePaneClick = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const handlePaneContextMenu = useCallback(
+    (event: MouseEvent | React.MouseEvent) => {
+      event.preventDefault();
+
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        type: "pane",
+      });
+    },
+    [],
+  );
+
+  const handleNodeContextMenu = useCallback(
+    (event: MouseEvent | React.MouseEvent, node: Node) => {
+      event.preventDefault();
+
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        type: "node",
+        id: node.id,
+      });
+    },
+    [],
+  );
+
+  const handleEdgeContextMenu = useCallback(
+    (event: MouseEvent | React.MouseEvent, edge: Edge) => {
+      event.preventDefault();
+
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        type: "edge",
+        id: edge.id,
+      });
+    },
+    [],
   );
 
   const onConnectStart: OnConnectStart = (event, params) => {
@@ -607,13 +658,52 @@ function GraphEditorContent({
           onConnectStart={onConnectStart}
           onConnectEnd={onConnectEnd}
           onMouseMove={handleMouseMove}
+          onPaneContextMenu={handlePaneContextMenu}
+          onNodeContextMenu={handleNodeContextMenu}
+          onEdgeContextMenu={handleEdgeContextMenu}
+          onPaneClick={handlePaneClick}
+          onNodeClick={handlePaneClick}
+          onEdgeClick={handlePaneClick}
         >
+          {contextMenu && (
+            <ContextMenu
+              x={contextMenu.x}
+              y={contextMenu.y}
+              nodes={nodes}
+              edges={edges}
+              externalFunctions={projectService.externalFunctions}
+              onDelete={() => {
+                setNodes((nodesSnapshot) =>
+                  nodesSnapshot.filter((node) => node.id !== contextMenu.id),
+                );
+                setEdges((edgesSnapshot) =>
+                  edgesSnapshot.filter((edge) => edge.id !== contextMenu.id),
+                );
+                setContextMenu(null);
+              }}
+              onProperties={() => {
+                setContextMenu(null);
+
+                // ton code
+              }}
+              onAddComment={() => {
+                createAnnotationFromContext(
+                  contextMenu.x,
+                  contextMenu.y,
+                );
+
+                setContextMenu(null);
+              }}
+              onExternalFunction={(index) => {
+                setContextMenu(null);
+
+                // ton code
+              }}
+            />
+          )}
           <Background variant={BackgroundVariant.Cross} color="gray" />
-
           <Controls />
-
           <MiniMap pannable />
-
           <GraphAwareness
             currentUserName={
               collaborators.find(
@@ -660,7 +750,6 @@ function GraphEditorContent({
           );
 
           projectService.currentModel.elements.push(element);
-
           projectService.raiseEventCreatedElement(
             projectService.currentModel,
             element,
