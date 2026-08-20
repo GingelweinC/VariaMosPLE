@@ -2,8 +2,8 @@ import { Point } from "./Point";
 import { Property } from "./Property";
 
 export class Relationship {
-  id: string; 
-  type: string; 
+  id: string;
+  type: string;
   name: string;
   sourceId: string;
   targetId: string;
@@ -15,13 +15,13 @@ export class Relationship {
   constructor(
     id: string,
     name: string,
-    type: string, 
+    type: string,
     sourceId: string,
     targetId: string,
     points: Point[] = [],
     min: number,
     max: number,
-    properties: Property[] = []
+    properties: Property[] = [],
   ) {
     this.id = id;
     this.name = name;
@@ -32,5 +32,22 @@ export class Relationship {
     this.min = min;
     this.max = max;
     this.properties = properties;
+  }
+
+  static fromRelationType(
+    relationType: any,
+    sourceId: string,
+    targetId: string,
+  ) {
+    return new Relationship(
+      crypto.randomUUID(),
+      "New " + relationType.name,
+      relationType.uuid,
+      sourceId,
+      targetId,
+      [],
+      0,
+      Number.MAX_SAFE_INTEGER,
+    );
   }
 }

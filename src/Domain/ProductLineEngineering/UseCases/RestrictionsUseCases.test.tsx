@@ -1,7 +1,6 @@
 import RestrictionsUseCases from "./RestrictionsUseCases";
 import LanguageUseCases from "./LanguageUseCases";
 import {Language} from "../Entities/Language";
-import {mockReturnedValue} from "../../../mockReturnedValue";
 import {Element} from "../Entities/Element";
 import {Relationship} from "../Entities/Relationship";
 import {Model} from "../Entities/Model";

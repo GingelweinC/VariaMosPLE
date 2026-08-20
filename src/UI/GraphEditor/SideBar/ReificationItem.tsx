@@ -1,7 +1,4 @@
-import {
-  Endpoint,
-  Reification,
-} from "../../../Domain/ProductLineEngineering/Entities/Reification";
+import { Reification } from "../../../Domain/ProductLineEngineering/Entities/Reification";
 
 export interface ReificationItemProps {
   reificationType: Record<string, any>;
@@ -18,17 +15,7 @@ export default function ReificationItem({
       <button
         type="button"
         onClick={() =>
-          addReification(
-            new Reification(
-              "New " + reificationType.name,
-              reificationType.uuid,
-              [],
-              reificationType.endpoints.map(
-                (endpoint) => new Endpoint(endpoint.uuid, []),
-              ),
-              null,
-            ),
-          )
+          addReification(Reification.fromReificationType(reificationType))
         }
       >
         +

@@ -70,21 +70,9 @@ const EditProductManager: React.FC<EditProductManagerProps> = ({ projectService,
       // Creamos la propiedad "Product_image"
       const productImageProp = new Property(
         "Product_image",   // name
+        "string",          // type
         base64Data,        // value
-        "Image",           // type
-        undefined,         // options
-        undefined,         // linked_property
-        undefined,         // linked_value
-        false,             // custom
         true,              // display
-        "",                // comment
-        "",                // possibleValues
-        undefined,         // possibleValuesLinks
-        0,                 // minCardinality
-        0,                 // maxCardinality
-        "",                // constraint
-        base64Data,         // defaultValue
-        null
       );
 
       // Buscar en el modelo (currentModel) si existe un elemento "Product"
@@ -364,21 +352,9 @@ const EditProductManager: React.FC<EditProductManagerProps> = ({ projectService,
       }
       return new Property(
         p.name,
-        defaultVal,
         p.type,
-        p.options,
-        p.linked_property,
-        p.linked_value,
-        false,
-        true,
-        p.comment,
-        p.possibleValues,
-        p.possibleValuesLinks,
-        p.minCardinality,
-        p.maxCardinality,
-        p.constraint,
         defaultVal,
-        p.autocompleteSource
+        p.display,
       );
     });
     const newElement: Element = {
@@ -415,21 +391,8 @@ const EditProductManager: React.FC<EditProductManagerProps> = ({ projectService,
       properties: [
         new Property(
           "Type",
+          "string",
           "Contains",
-          "String",
-          undefined,
-          undefined,
-          undefined,
-          false,
-          true,
-          "",
-          "Contains",
-          undefined,
-          0,
-          0,
-          "",
-          "Contains",
-          null
         )
       ]
     };

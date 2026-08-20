@@ -1,12 +1,8 @@
 import { FC, useEffect, useMemo } from "react";
-import { Pane, ResizablePanes } from "resizable-panes-react";
 import ProjectService from "../../Application/Project/ProjectService";
 import Layout from "../../core/components/Layout";
 import useWindowDimensions from "../../core/hooks/useWindowDimensions ";
-import DiagramEditor from "../DiagramEditor/DiagramEditor";
-import ElementsPannel from "../DiagramEditor/ElementsPannel";
 import ProjectManagement from "../ProjectManagement/ProjectManagement";
-import TreeExplorer from "../TreeExplorer/TreeExplorer";
 import "./DashBoard.css";
 import ModelRenderer from "./ModelRenderer";
 
@@ -15,7 +11,7 @@ const DashBoard: FC<unknown> = () => {
     () => new ProjectService(),
     []
   );
-  const { width } = useWindowDimensions();
+  useWindowDimensions();
 
   useEffect(() => {
     const init = async () => {

@@ -548,16 +548,7 @@ function GraphEditorContent({
   const onConnect: OnConnect = useCallback(
     (params) => {
       if (currentRelationType !== null) {
-        const newRelation = new Relationship(
-          crypto.randomUUID(),
-          "New " + currentRelationType.name,
-          currentRelationType.uuid,
-          params.source,
-          params.target,
-          [],
-          0,
-          Number.MAX_SAFE_INTEGER,
-        );
+        const newRelation = Relationship.fromRelationType(currentRelationType, params.source, params.target)
 
         projectService.currentModel.relationships.push(newRelation);
 

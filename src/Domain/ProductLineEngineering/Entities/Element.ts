@@ -9,17 +9,26 @@ export class Element {
   y: number = 0;
   width: number = 100;
   height: number = 60;
-  parentId: string; 
-  instanceOfId: string; 
+  parentId: string;
+  instanceOfId: string;
   properties: Property[] = [];
   sourceModelElements: SourceModelElement[] = [];
 
-  constructor(name: string, type: string, properties: Property[] = [], parentId:string) {
+  constructor(
+    name: string,
+    type: string,
+    properties: Property[] = [],
+    parentId: string,
+  ) {
     this.id = generateId();
     this.type = type;
     this.name = name;
     this.properties = properties;
-    this.parentId=parentId;
+    this.parentId = parentId;
+  }
+
+  static fromElementType(elementType: any): Element {
+    return new Element("New " + elementType.name, elementType.uuid, [], null);
   }
 }
 
@@ -31,7 +40,7 @@ function generateId(): string {
       var r = (dt + Math.random() * 16) % 16 | 0;
       dt = Math.floor(dt / 16);
       return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-    }
+    },
   );
   return uuid;
 }

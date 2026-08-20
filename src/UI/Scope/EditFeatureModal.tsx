@@ -36,15 +36,15 @@ const EditFeatureModal: React.FC<EditFeatureModalProps> = ({
       <Modal.Body>
         <Form onSubmit={e => e.preventDefault()}>
           {localFeature.properties.map((prop, i) => (
-            <Form.Group key={prop.id} controlId={`prop-${prop.id}`} className="mb-3">
+            <Form.Group key={prop.name} controlId={`prop-${prop.name}`} className="mb-3">
               <Form.Label>{prop.name}</Form.Label>
-              {prop.possibleValues ? (
+              {Array.isArray(prop.type) ? (
                 <Form.Control
                   as="select"
                   value={prop.value}
                   onChange={e => handlePropertyChange(i, (e.target as unknown as HTMLSelectElement).value)}
                 >
-                  {prop.possibleValues.split(',').map(v => (
+                  {prop.type.map(v => (
                     <option key={v.trim()} value={v.trim()}>
                       {v.trim()}
                     </option>

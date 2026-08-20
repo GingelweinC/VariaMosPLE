@@ -75,7 +75,7 @@ export default function ReificationNode({
 
       <div className="reification-node-title">{reification.name}</div>
       {reification.properties.map((p) => (
-        <div className="reification-node-property" key={p.id}>
+        <div className="reification-node-property" key={p.name}>
           {p.name} = {p.value}
         </div>
       ))}

@@ -20,6 +20,9 @@ import TreeMenu from "./TreeMenu";
 import treeCollaborationService from "../../DataProvider/Services/collab/treeCollaborationService";
 
 import { highlight, languages } from "prismjs";
+import ReasoningPanel from "../ReasoningPanel";
+import "prismjs/components/prism-lisp";
+
 
 interface Props {
   projectService: ProjectService;
@@ -1340,10 +1343,7 @@ class TreeExplorer extends Component<Props, State> {
               </Tab.Pane>
 
               <Tab.Pane className="" eventKey="queries">
-                <QueryModal
-                  handleCloseCallback={() => {}}
-                  projectService={this.props.projectService}
-                />
+                <ReasoningPanel projectService={this.props.projectService} />
               </Tab.Pane>
             </Tab.Content>
           </Tab.Container>
