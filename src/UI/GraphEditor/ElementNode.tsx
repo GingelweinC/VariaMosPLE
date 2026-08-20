@@ -84,11 +84,13 @@ export default function ElementNode({
 
       <div className="element-node-title">{element.name}</div>
 
-      {element.properties.map((p) => (
-        <div className="element-node-property" key={p.name}>
-          {p.name} = {p.value}
-        </div>
-      ))}
+      {element.properties
+        .filter((p) => p.display === true)
+        .map((p) => (
+          <div className="element-node-property" key={p.name}>
+            {p.name} = {p.value? p.value : "?"}
+          </div>
+        ))}
     </div>
   );
 }

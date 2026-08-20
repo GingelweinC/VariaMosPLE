@@ -64,6 +64,9 @@ import { useAnnotationHandlers } from "./useAnnotation";
 import { useHistory } from "./useHistory";
 import { useModelSynchronization } from "./useModelSynchronization";
 import ContextMenu from "./ContextMenu";
+import { Button, Modal } from "react-bootstrap";
+import PropertiesModal from "./PropertiesModal";
+
 export default function GraphEditor({
   projectService,
 }: Readonly<{
@@ -111,6 +114,16 @@ function GraphEditorContent({
   const annotationObserver = useRef<(() => void) | null>(null);
   const [annotationRecords, setAnnotationRecords] = useState<any[]>([]);
   const [pendingAnnotation, setPendingAnnotation] = useState<any>(null);
+
+  const [showPropertiesModal, setShowPropertiesModal] = useState(false);
+  const [selectedObject, setSelectedObject] = useState<any | null>(null);
+  const [selectedObjectType, setSelectedObjectType] = useState<
+    "element" | "reification" | "relationship" | null
+  >(null);
+
+  const [messageModalTitle, setMessageModalTitle] = useState("");
+  const [messageModalContent, setMessageModalContent] = useState("");
+  const [showMessageModal, setShowMessageModal] = useState(false);
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -195,9 +208,19 @@ function GraphEditorContent({
   }, [projectService]);
 
   useEffect(() => {
-  if (!model || !projectService.currentLanguage) {
-    return;
-  }
+    function showMessageModal(title: string, message: string) {
+      setShowMessageModal(true);
+      setMessageModalTitle(title);
+      setMessageModalContent(message);
+    }
+    if (!model) {
+      showMessageModal("Error", "Model not found");
+      return;
+    }
+    if (!projectService.currentLanguage) {
+      showMessageModal("Error", "Language definition not found for model type: " + model.type);
+      return;
+    }
 
     setNodes(
       [
@@ -258,6 +281,125 @@ function GraphEditorContent({
       selectedRelationshipsIds
     );
   }
+
+    const openPropertiesModal = useCallback(
+    (menu: {
+      x: number;
+      y: number;
+      type: "pane" | "node" | "edge";
+      id?: string;
+    }) => {
+      if (!menu.id) {
+        return;
+      }
+
+      let object: any = null;
+      let objectType:
+        | "element"
+        | "reification"
+        | "relationship"
+        | null = null;
+
+      if (menu.type === "node") {
+        const element = projectService.findModelElementById(
+          projectService.currentModel,
+          menu.id,
+        );
+
+        if (element) {
+          object = element;
+          objectType = "element";
+        } else {
+          const reification = projectService.findModelReificationById(
+            projectService.currentModel,
+            menu.id,
+          );
+
+          if (reification) {
+            object = reification;
+            objectType = "reification";
+          }
+        }
+      }
+
+      if (menu.type === "edge") {
+        const relationship =
+          projectService.currentModel.relationships.find(
+            (relationship) => relationship.id === menu.id,
+          );
+
+        if (relationship) {
+          object = relationship;
+          objectType = "relationship";
+        }
+      }
+
+      if (!object || !objectType) {
+        return;
+      }
+
+      setSelectedObject(structuredClone(object));
+      setSelectedObjectType(objectType);
+      setShowPropertiesModal(true);
+    },
+    [projectService],
+  );
+
+  const savePropertiesModal = useCallback(() => {
+  if (!selectedObject || !selectedObjectType) {
+    return;
+  }
+
+  let target: any = null;
+
+  switch (selectedObjectType) {
+    case "element":
+      target = projectService.findModelElementById(
+        projectService.currentModel,
+        selectedObject.id,
+      );
+      break;
+
+    case "reification":
+      target = projectService.findModelReificationById(
+        projectService.currentModel,
+        selectedObject.id,
+      );
+      break;
+
+    case "relationship":
+      target =
+        projectService.currentModel.relationships.find(
+          (relationship) =>
+            relationship.id === selectedObject.id,
+        ) ?? null;
+      break;
+  }
+
+  if (!target) {
+    return;
+  }
+
+  target.properties = structuredClone(
+    selectedObject.properties ?? [],
+  );
+
+  syncModelChanges();
+
+  setShowPropertiesModal(false);
+  setSelectedObject(null);
+  setSelectedObjectType(null);
+}, [
+  selectedObject,
+  selectedObjectType,
+  projectService,
+  syncModelChanges,
+]);
+  const cancelPropertiesModal = useCallback(() => {
+    setShowPropertiesModal(false);
+    setSelectedObject(null);
+    setSelectedObjectType(null);
+  }, []);
 
   const nodeTypes: NodeTypes = {
     element: ElementNode,
@@ -706,9 +848,8 @@ function GraphEditorContent({
                 setContextMenu(null);
               }}
               onProperties={() => {
+                openPropertiesModal(contextMenu);
                 setContextMenu(null);
-
-                // ton code
               }}
               onAddComment={() => {
                 createAnnotationFromContext(
@@ -790,6 +931,78 @@ function GraphEditorContent({
           setNodes((nodesSnapshot) => [...nodesSnapshot, node]);
         }}
       />
+      <div>
+          <Modal
+            show={showPropertiesModal}
+            onHide={cancelPropertiesModal}
+            size="lg"
+            centered
+          >
+            <Modal.Header closeButton>
+              <Modal.Title>
+                Properties
+              </Modal.Title>
+            </Modal.Header>
+
+            <Modal.Body>
+              <div style={{ maxHeight: "65vh", overflow: "auto" }}>
+                <PropertiesModal
+                  item={selectedObject}
+                  onPropertiesChange={(properties) => {
+                    setSelectedObject((currentObject) =>
+                      currentObject
+                        ? {
+                            ...currentObject,
+                            properties,
+                          }
+                        : null,
+                    );
+                  }}
+                />
+              </div>
+            </Modal.Body>
+
+            <Modal.Footer>
+              <Button
+                variant="primary"
+                onClick={savePropertiesModal}
+              >
+                Save
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={cancelPropertiesModal}
+              >
+                Cancel
+              </Button>
+            </Modal.Footer>
+          </Modal>
+        </div>
+        <div>
+          <Modal
+            show={showMessageModal}
+            onHide={() => setShowMessageModal(false)}
+            size="lg"
+            centered
+          >
+            <Modal.Header closeButton>
+              <Modal.Title>
+                {messageModalTitle}
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <div style={{ maxHeight: "65vh", overflow: "auto" }}>
+                <p>{messageModalContent}</p>
+              </div>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="primary" onClick={() => setShowMessageModal(false)}>
+                Close
+              </Button>
+            </Modal.Footer>
+          </Modal>
+        </div>
 
       <HistoryPanel
         show={showHistoryPanel}
