@@ -35,6 +35,7 @@ export class ReasoningService {
         query: JSON.parse(query),
         options: {},
       });
+      console.log(response);
     } catch (error) {
       console.error(error);
     }

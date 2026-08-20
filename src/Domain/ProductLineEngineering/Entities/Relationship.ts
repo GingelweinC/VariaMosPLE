@@ -48,6 +48,15 @@ export class Relationship {
       [],
       0,
       Number.MAX_SAFE_INTEGER,
+      Object.entries<any>(relationType.properties).map(
+        ([name, property]) =>
+          new Property(
+            name,
+            property.type,
+            property.defaultValue ?? null,
+            property.defaultDisplay ?? false,
+          ),
+      ),
     );
   }
 }

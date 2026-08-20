@@ -28,7 +28,20 @@ export class Element {
   }
 
   static fromElementType(elementType: any): Element {
-    return new Element("New " + elementType.name, elementType.uuid, [], null);
+    return new Element(
+      "New " + elementType.name,
+      elementType.uuid,
+      Object.entries<any>(elementType.properties).map(
+        ([name, property]) =>
+          new Property(
+            name,
+            property.type,
+            property.defaultValue ?? null,
+            property.defaultDisplay ?? false,
+          ),
+      ),
+      null,
+    );
   }
 }
 

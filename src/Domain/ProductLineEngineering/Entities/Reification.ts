@@ -41,7 +41,15 @@ export class Reification {
     return new Reification(
       "New " + reificationType.name,
       reificationType.uuid,
-      [],
+      Object.entries<any>(reificationType.properties).map(
+        ([name, property]) =>
+          new Property(
+            name,
+            property.type,
+            property.defaultValue ?? null,
+            property.defaultDisplay ?? false,
+          ),
+      ),
       reificationType.endpoints.map(
         (endpoint) => new Endpoint(endpoint.uuid, []),
       ),
