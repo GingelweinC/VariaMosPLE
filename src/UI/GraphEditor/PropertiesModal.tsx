@@ -276,6 +276,9 @@ export default function PropertiesModal({
           onChange={(event) => setName(event.target.value)}
         />
       </InputGroup>
+
+      <hr />
+
       <h5>Properties</h5>
       {properties.map((property, index) => (
         <InputGroup key={`${property.name}-${index}`}>
@@ -301,8 +304,6 @@ export default function PropertiesModal({
           )}
         </InputGroup>
       ))}
-
-      <hr />
 
       <InputGroup>
         <Form.Control
