@@ -139,13 +139,16 @@ export default function ReasoningPanel({
             </Button>
           </OverlayTrigger>
         </InputGroup>
-        <Button onClick={() => reasoningService.execute(query, solver)}>
-          <FontAwesomeIcon icon={faPlay} /> Execute
-        </Button>
-        <Button onClick={() => setShowResults(true)}>
-          <FontAwesomeIcon icon={faSquarePollVertical} /> Results
-        </Button>
       </div>
+      <Button
+        variant="primary"
+        onClick={() => reasoningService.execute(query, solver)}
+      >
+        <FontAwesomeIcon icon={faPlay} /> Execute
+      </Button>
+      <Button variant="primary" onClick={() => setShowResults(true)}>
+        <FontAwesomeIcon icon={faSquarePollVertical} /> Results
+      </Button>
 
       {/* MODALS */}
       <QueryBuilderModal
