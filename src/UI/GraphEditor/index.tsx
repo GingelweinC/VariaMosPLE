@@ -123,6 +123,11 @@ function GraphEditorContent({
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [selectedObject, setSelectedObject] = useState<any | null>(null);
   const [backupObject, setBackupObject] = useState<any | null>(null);
+  const [editingName, setEditing] = useState(selectedObject?.name ?? "");
+  useEffect(() => {
+    setEditing(selectedObject?.name ?? "");
+  }, [selectedObject]);
+
   const [selectedObjectType, setSelectedObjectType] = useState<
     "element" | "reification" | "relationship" | null
   >(null);
@@ -374,6 +379,7 @@ function GraphEditorContent({
     if (!selectedObject || !selectedObjectType || !backupObject) {
       return;
     }
+    selectedObject.name = editingName;
 
     let target: any = null;
 
@@ -450,6 +456,7 @@ function GraphEditorContent({
     projectService,
     registerHistoryEvent,
     syncModelChanges,
+    editingName,
   ]);
   const cancelPropertiesModal = useCallback(() => {
     setShowPropertiesModal(false);
@@ -764,6 +771,34 @@ function GraphEditorContent({
     [screenToFlowPosition, updateCursor],
   );
 
+  const handleNodeDoubleClick = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault();
+
+      openPropertiesModal({
+        x: event.clientX,
+        y: event.clientY,
+        type: "node",
+        id: node.id,
+      });
+    },
+    [openPropertiesModal],
+  );
+
+  const handleEdgeDoubleClick = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault();
+
+      openPropertiesModal({
+        x: event.clientX,
+        y: event.clientY,
+        type: "edge",
+        id: edge.id,
+      });
+    },
+    [openPropertiesModal],
+  );
+
   const handlePaneClick = useCallback(() => {
     setContextMenu(null);
   }, []);
@@ -860,6 +895,12 @@ function GraphEditorContent({
 
         setCurrentRelationType(null);
         setCurrentEndpointType(null);
+        openPropertiesModal({
+          x: 0,
+          y: 0,
+          type: "edge",
+          id: newEdge.id,
+        });
 
         syncModelChanges();
 
@@ -913,6 +954,7 @@ function GraphEditorContent({
       setCurrentRelationType,
       setCurrentEndpointType,
       registerHistoryEvent,
+      openPropertiesModal,
     ],
   );
 
@@ -945,6 +987,8 @@ function GraphEditorContent({
           onPaneClick={handlePaneClick}
           onNodeClick={handlePaneClick}
           onEdgeClick={handlePaneClick}
+          onNodeDoubleClick={handleNodeDoubleClick}
+          onEdgeDoubleClick={handleEdgeDoubleClick}
         >
           {contextMenu && (
             <ContextMenu
@@ -1055,7 +1099,12 @@ function GraphEditorContent({
           });
 
           setNodes((nodesSnapshot) => [...nodesSnapshot, node]);
-
+          openPropertiesModal({
+            x: 0,
+            y: 0,
+            type: "node",
+            id: element.id,
+          });
           syncModelChanges();
         }}
         addReification={(reification: Reification) => {
@@ -1066,6 +1115,12 @@ function GraphEditorContent({
 
           projectService.currentModel.reifications.push(reification);
           setNodes((nodesSnapshot) => [...nodesSnapshot, node]);
+          openPropertiesModal({
+            x: 0,
+            y: 0,
+            type: "node",
+            id: reification.id,
+          });
         }}
       />
       <div>
@@ -1076,13 +1131,15 @@ function GraphEditorContent({
           centered
         >
           <Modal.Header closeButton>
-            <Modal.Title>Properties</Modal.Title>
+            <Modal.Title>Edit</Modal.Title>
           </Modal.Header>
 
           <Modal.Body>
             <div style={{ maxHeight: "65vh", overflow: "auto" }}>
               <PropertiesModal
                 item={selectedObject}
+                name={editingName}
+                setName={setEditing}
                 onPropertiesChange={(properties) => {
                   setSelectedObject((currentObject) =>
                     currentObject

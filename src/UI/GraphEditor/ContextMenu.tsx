@@ -36,8 +36,7 @@ export default function ContextMenu({
     edges.some(
       (edge) =>
         edge.selected &&
-        (edge.type === "relation" ||
-          edge.type === "reificationEndpoint"),
+        (edge.type === "relation" || edge.type === "reificationEndpoint"),
     );
 
   return createPortal(
@@ -72,7 +71,7 @@ export default function ContextMenu({
               }}
               data-command="Properties"
             >
-              Properties
+              Edit
             </Dropdown.Item>
           </>
         )}

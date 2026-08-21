@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Button, Form, InputGroup } from "react-bootstrap";
 
 import {
@@ -8,11 +8,18 @@ import {
 
 interface Props {
   item: any;
+  name: string;
+  setName: Dispatch<SetStateAction<string>>;
   onPropertiesChange: (properties: Property[]) => void;
 }
 type NewPropertyType = "boolean" | "integer" | "string" | "array";
 
-export default function PropertiesModal({ item, onPropertiesChange }: Props) {
+export default function PropertiesModal({
+  item,
+  onPropertiesChange,
+  name,
+  setName,
+}: Props) {
   const [properties, setProperties] = useState<Property[]>(
     structuredClone(item?.properties ?? []),
   );
@@ -260,6 +267,16 @@ export default function PropertiesModal({ item, onPropertiesChange }: Props) {
 
   return (
     <div>
+      <h5>Name</h5>
+
+      <InputGroup>
+        <Form.Control
+          type="text"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+      </InputGroup>
+      <h5>Properties</h5>
       {properties.map((property, index) => (
         <InputGroup key={`${property.name}-${index}`}>
           <InputGroup.Checkbox
