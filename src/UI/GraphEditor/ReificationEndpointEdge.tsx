@@ -2,40 +2,43 @@ import {
   BaseEdge,
   Edge,
   EdgeProps,
+  getBezierPath,
   getStraightPath,
   MarkerType,
   useInternalNode,
 } from "@xyflow/react";
-import { getEdgeParams } from "./utils";
 import { Endpoint } from "../../Domain/ProductLineEngineering/Entities/Reification";
+import { getEdgeParams } from "./utils";
 
 export type ReificationEndpointEdgeType = Edge<{}, "reification-endpoint">;
 
 export default function ReificationEndpointEdge({
   id,
   source,
+  sourceX,
+  sourceY,
+  sourcePosition,
   target,
-  data,
   style,
   markerStart,
   markerEnd,
 }: EdgeProps<ReificationEndpointEdgeType>): JSX.Element {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
-  if (!sourceNode || !targetNode) return null;
 
   const {
-    sx: sourceX,
-    sy: sourceY,
     tx: targetX,
     ty: targetY,
+    targetPos: targetPosition,
   } = getEdgeParams(sourceNode, targetNode);
 
-  const [edgePath] = getStraightPath({
+  const [edgePath] = getBezierPath({
     sourceX,
     sourceY,
+    sourcePosition,
     targetX,
     targetY,
+    targetPosition,
   });
 
   return (
@@ -55,15 +58,12 @@ export function convertReificationEndpointToEdges(
   reificationId: string,
   endpoint: Endpoint,
 ) {
-  
   const reificationType = reificationTypes.find(
     (type) => type.uuid === reificationTypeId,
-    );
+  );
   const endpointTypes = reificationType.endpoints;
 
-  const endpointType = endpointTypes.find(
-    (type) => type.uuid === endpoint.id,
-  );
+  const endpointType = endpointTypes.find((type) => type.uuid === endpoint.id);
 
   return endpoint.elements.map((elementId) => ({
     id: crypto.randomUUID(),

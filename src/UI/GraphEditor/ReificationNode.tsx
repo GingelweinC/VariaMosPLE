@@ -10,10 +10,12 @@ import {
 } from "@xyflow/react";
 import { useEffect } from "react";
 import { Reification } from "../../Domain/ProductLineEngineering/Entities/Reification";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 export type ReificationNodeType = Node<
   {
     reification: Reification;
+    reificationType: any;
     style: React.CSSProperties;
   },
   "reification"
@@ -35,7 +37,7 @@ function generatePosition(i: number) {
 
 export default function ReificationNode({
   id,
-  data: { reification, style },
+  data: { reification, reificationType, style },
   selected,
   width,
   height,
@@ -55,17 +57,24 @@ export default function ReificationNode({
         height: height ?? reification.height,
       }}
     >
-      {reification.endpoints.map((endpoint, index) => (
-        <Handle
-          key={endpoint.id}
-          id={endpoint.id}
-          type="source"
-          className="reification-handle"
-          position={generatePosition(index)}
-          isConnectableEnd={false}
-          isConnectableStart={true}
-        />
-      ))}
+      {reification.endpoints.map((endpoint, index) => {
+        const endpointType = reificationType.endpoints.find(
+          (endpointType) => endpointType.uuid === endpoint.id,
+        );
+        return (
+          <OverlayTrigger overlay={<Tooltip>{endpointType.name}</Tooltip>}>
+            <Handle
+              key={endpoint.id}
+              id={endpoint.id}
+              type="source"
+              className="reification-handle"
+              position={generatePosition(index)}
+              isConnectableEnd={false}
+              isConnectableStart={true}
+            />
+          </OverlayTrigger>
+        );
+      })}
 
       <NodeResizer isVisible={selected} minWidth={20} minHeight={20} />
 
@@ -98,6 +107,7 @@ export function convertReificationToNode(
 
     data: {
       reification,
+      reificationType,
       style: {
         backgroundColor: reificationType.style.fill.value,
         color: reificationType.style.font.color,
