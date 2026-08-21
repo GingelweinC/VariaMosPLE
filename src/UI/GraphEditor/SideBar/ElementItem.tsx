@@ -1,3 +1,4 @@
+import { Button, ListGroup } from "react-bootstrap";
 import { Element } from "../../../Domain/ProductLineEngineering/Entities/Element";
 
 export interface ElementItemProps {
@@ -10,14 +11,11 @@ export default function ElementItem({
   addElement,
 }: Readonly<ElementItemProps>): JSX.Element {
   return (
-    <div className="element-item">
+    <Button
+      variant="outline-primary"
+      onClick={() => addElement(Element.fromElementType(elementType))}
+    >
       {elementType.name}
-      <button
-        type="button"
-        onClick={() => addElement(Element.fromElementType(elementType))}
-      >
-        +
-      </button>
-    </div>
+    </Button>
   );
 }

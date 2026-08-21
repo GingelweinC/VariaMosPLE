@@ -23,6 +23,11 @@
   --dark-color-font: #212529;
 }
 
+.btn-outline-primary {
+  --bs-btn-active-bg: #0b5ed7;
+  --bs-btn-active-border-color: #0b5ed7;
+}
+
 html{
   font-family: Arial, Helvetica, sans-serif;
   color: var(--dark-color-font) !important;

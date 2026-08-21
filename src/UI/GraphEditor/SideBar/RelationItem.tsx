@@ -1,3 +1,4 @@
+import { Button, ListGroup } from "react-bootstrap";
 import { useConnectionContext } from "../ConnectionContext";
 
 export interface RelationItemProps {
@@ -10,20 +11,16 @@ export default function RelationItem({
   const { currentRelationType, setCurrentRelationType } =
     useConnectionContext();
   return (
-    <div
-      className={
-        currentRelationType?.uuid === relationType.uuid
-          ? "relation-item relation-item-active"
-          : "relation-item"
-      }
+    <Button
+      variant="outline-primary"
+      active={currentRelationType?.uuid === relationType.uuid}
+      onClick={() => {
+        setCurrentRelationType(
+          currentRelationType?.uuid === relationType.uuid ? null : relationType,
+        );
+      }}
     >
       {relationType.name}
-      <button
-        type="button"
-        onClick={() => setCurrentRelationType(relationType)}
-      >
-        +
-      </button>
-    </div>
+    </Button>
   );
 }

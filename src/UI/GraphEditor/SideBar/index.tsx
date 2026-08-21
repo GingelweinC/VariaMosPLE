@@ -4,6 +4,7 @@ import ElementItem from "./ElementItem";
 import ReificationItem from "./ReificationItem";
 import RelationItem from "./RelationItem";
 import { useConnectionContext } from "../ConnectionContext";
+import { ListGroup } from "react-bootstrap";
 
 export interface SideBarProps {
   elementTypes: Record<string, any>[];
@@ -20,34 +21,34 @@ export default function SideBar({
   addElement,
   addReification,
 }: Readonly<SideBarProps>): JSX.Element {
-  const { setCurrentRelationType } = useConnectionContext();
   return (
     <div className="sidebar">
       <div>Element Types</div>
-      {elementTypes.map((elementType) => (
-        <ElementItem
-          key={elementType.uuid}
-          elementType={elementType}
-          addElement={addElement}
-        />
-      ))}
-      <div>
-        Relation Types{" "}
-        <button type="button" onClick={() => setCurrentRelationType(null)}>
-          Cancel
-        </button>
-      </div>
-      {relationTypes.map((relationType) => (
-        <RelationItem key={relationType.uuid} relationType={relationType} />
-      ))}
+      <ListGroup>
+        {elementTypes.map((elementType) => (
+          <ElementItem
+            key={elementType.uuid}
+            elementType={elementType}
+            addElement={addElement}
+          />
+        ))}
+      </ListGroup>
+      <div>Relation Types</div>
+      <ListGroup>
+        {relationTypes.map((relationType) => (
+          <RelationItem key={relationType.uuid} relationType={relationType} />
+        ))}
+      </ListGroup>
       <div>Reification Types</div>
-      {reificationTypes.map((reificationType) => (
-        <ReificationItem
-          key={reificationType.uuid}
-          reificationType={reificationType}
-          addReification={addReification}
-        />
-      ))}
+      <ListGroup>
+        {reificationTypes.map((reificationType) => (
+          <ReificationItem
+            key={reificationType.uuid}
+            reificationType={reificationType}
+            addReification={addReification}
+          />
+        ))}
+      </ListGroup>
     </div>
   );
 }

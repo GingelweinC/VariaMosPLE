@@ -1,3 +1,4 @@
+import { Button, ListGroup } from "react-bootstrap";
 import { Reification } from "../../../Domain/ProductLineEngineering/Entities/Reification";
 
 export interface ReificationItemProps {
@@ -10,16 +11,13 @@ export default function ReificationItem({
   addReification,
 }: Readonly<ReificationItemProps>): JSX.Element {
   return (
-    <div className="reification-item">
+    <Button
+      variant="outline-primary"
+      onClick={() =>
+        addReification(Reification.fromReificationType(reificationType))
+      }
+    >
       {reificationType.name}
-      <button
-        type="button"
-        onClick={() =>
-          addReification(Reification.fromReificationType(reificationType))
-        }
-      >
-        +
-      </button>
-    </div>
+    </Button>
   );
 }
