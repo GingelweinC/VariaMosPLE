@@ -53,8 +53,9 @@ export class Relationship {
           new Property(
             name,
             property.type,
-            property.defaultValue ?? null,
-            property.defaultDisplay ?? false,
+            property.defaultValue,
+            property.defaultDisplay,
+            false,
           ),
       ),
     );

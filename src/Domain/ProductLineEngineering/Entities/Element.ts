@@ -36,8 +36,9 @@ export class Element {
           new Property(
             name,
             property.type,
-            property.defaultValue ?? null,
-            property.defaultDisplay ?? false,
+            property.defaultValue,
+            property.defaultDisplay,
+            false,
           ),
       ),
       null,

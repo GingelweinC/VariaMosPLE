@@ -46,8 +46,9 @@ export class Reification {
           new Property(
             name,
             property.type,
-            property.defaultValue ?? null,
-            property.defaultDisplay ?? false,
+            property.defaultValue,
+            property.defaultDisplay,
+            false,
           ),
       ),
       reificationType.endpoints.map(
