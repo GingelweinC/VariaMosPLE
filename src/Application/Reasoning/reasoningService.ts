@@ -1,24 +1,48 @@
 import axios from "axios";
-import { FullLanguage } from "../../Domain/ProductLineEngineering/Entities/Language";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
 import compileCLIF from "./compileCLIF";
 import { Property } from "../../Domain/ProductLineEngineering/Entities/Property";
+import ProjectService from "../Project/ProjectService";
 
 const SEMANTIC_TRANSLATOR_URL = "https://app.variamos.com/semantic_translator";
 
+export class Result {
+  modelName: string;
+  timestamp: Date;
+  satisfiable?: boolean;
+  solutions?: Record<string, any>[];
+  iterations?: any[]; // TODO: Handle iterations results
+
+  constructor(
+    modelName: string,
+    result: {
+      satisfiable?: boolean;
+      solutions?: Record<string, any>[];
+      iterations?: any[];
+    },
+  ) {
+    this.modelName = modelName;
+    this.timestamp = new Date();
+    this.satisfiable = result.satisfiable;
+    this.solutions = result.solutions;
+    this.iterations = result.iterations;
+  }
+}
+
 export class ReasoningService {
   savedQueries: string[] = [];
-  results: any[] = [];
+  results: Result[] = [];
 
-  currentModelCLIF: string = "";
+  currentModelName?: string;
+  currentModelCLIF?: string;
   solvers: any[] = [];
 
-  syncCurrentModelCLIF(
-    this: ReasoningService,
-    model: Model,
-    language: FullLanguage,
-  ) {
-    this.currentModelCLIF = compileCLIF(model, language);
+  syncCurrentModelCLIF(this: ReasoningService, projectService: ProjectService) {
+    this.currentModelName = projectService.currentModel.name;
+    this.currentModelCLIF = compileCLIF(
+      projectService.currentModel,
+      projectService.currentLanguage,
+    );
   }
 
   async syncSolvers(this: ReasoningService) {
@@ -39,8 +63,9 @@ export class ReasoningService {
         query: JSON.parse(query),
         options: {},
       });
-      console.log(response);
-      this.results.push(response.data.result);
+      this.results.push(
+        new Result(this.currentModelName, response.data.result),
+      );
     } catch (error) {
       console.error(error);
     }

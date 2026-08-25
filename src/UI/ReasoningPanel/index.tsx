@@ -1,6 +1,6 @@
 import "./index.css";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import QueryBuilderModal from "./QueryBuilderModal";
 import {
   Button,
@@ -29,15 +29,28 @@ export interface ReasoningPanelProps {
 export default function ReasoningPanel({
   projectService,
 }: Readonly<ReasoningPanelProps>): JSX.Element {
-  // Query
   const [query, setQuery] = useState<string>("");
   const [queryName, setQueryName] = useState<string>("");
   const [showQueryBuilder, setShowQueryBuilder] = useState<boolean>(false);
 
-  // Request
   const [solver, setSolver] = useState<string>(undefined);
+  const [areSolversSyncing, setAreSolversSyncing] = useState<boolean>(false);
+
+  const [isExecuting, setIsExecuting] = useState<boolean>(false);
+  const [dotCount, setDotCount] = useState<number>(0);
 
   const [showResults, setShowResults] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isExecuting) {
+      setDotCount(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setDotCount((prev) => (prev >= 3 ? 0 : prev + 1));
+    }, 500);
+    return () => clearInterval(interval);
+  }, [isExecuting]);
 
   return (
     <div className="reasoning-panel">
@@ -47,11 +60,15 @@ export default function ReasoningPanel({
           <InputGroup.Text>Model</InputGroup.Text>
           <OverlayTrigger
             placement="top"
-            overlay={<Tooltip>{projectService.currentModel?.name}</Tooltip>}
+            overlay={
+              <Tooltip>
+                {reasoningService.currentModelName ?? "No Selected Model"}
+              </Tooltip>
+            }
           >
             <Form.Control
               disabled
-              value={projectService.currentModel?.name}
+              value={reasoningService.currentModelName ?? "No Selected Model"}
               style={{ textOverflow: "ellipsis" }}
             />
           </OverlayTrigger>
@@ -61,10 +78,7 @@ export default function ReasoningPanel({
           >
             <Button
               onClick={() =>
-                reasoningService.syncCurrentModelCLIF(
-                  projectService.currentModel,
-                  projectService.currentLanguage,
-                )
+                reasoningService.syncCurrentModelCLIF(projectService)
               }
             >
               <FontAwesomeIcon icon={faArrowsRotate} />
@@ -112,7 +126,11 @@ export default function ReasoningPanel({
             </Button>
           </OverlayTrigger>
         </InputGroup>
-        <Form.Control disabled as="textarea" value={query} />
+        <Form.Control
+          as="textarea"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
       </div>
 
       {/* REQUEST */}
@@ -134,17 +152,35 @@ export default function ReasoningPanel({
             placement="top"
             overlay={<Tooltip>Synchronise Solvers List</Tooltip>}
           >
-            <Button onClick={async () => reasoningService.syncSolvers()}>
-              <FontAwesomeIcon icon={faArrowsRotate} />
+            <Button
+              disabled={areSolversSyncing}
+              onClick={() => {
+                setAreSolversSyncing(true);
+                reasoningService
+                  .syncSolvers()
+                  .then(() => setAreSolversSyncing(false));
+              }}
+            >
+              <FontAwesomeIcon
+                className={areSolversSyncing ? "rotating" : ""}
+                icon={faArrowsRotate}
+              />
             </Button>
           </OverlayTrigger>
         </InputGroup>
       </div>
       <Button
         variant="primary"
-        onClick={() => reasoningService.execute(query, solver)}
+        disabled={isExecuting}
+        onClick={() => {
+          setIsExecuting(true);
+          reasoningService
+            .execute(query, solver)
+            .then(() => setIsExecuting(false));
+        }}
       >
-        <FontAwesomeIcon icon={faPlay} /> Execute
+        <FontAwesomeIcon icon={faPlay} />{" "}
+        {isExecuting ? `Executing${".".repeat(dotCount)}` : "Execute"}
       </Button>
       <Button variant="primary" onClick={() => setShowResults(true)}>
         <FontAwesomeIcon icon={faSquarePollVertical} /> Results
@@ -159,7 +195,7 @@ export default function ReasoningPanel({
       <ResultsModal
         show={showResults}
         setShow={setShowResults}
-        currentModel={projectService.currentModel}
+        projectService={projectService}
       />
     </div>
   );

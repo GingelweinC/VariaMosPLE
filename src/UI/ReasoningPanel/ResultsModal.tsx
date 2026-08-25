@@ -1,59 +1,69 @@
 import { Accordion, ListGroup, Modal } from "react-bootstrap";
 import reasoningService from "../../Application/Reasoning/reasoningService";
-import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
+import ProjectService from "../../Application/Project/ProjectService";
 
 export interface ResultsModalProps {
   show: boolean;
   setShow: React.Dispatch<React.SetStateAction<boolean>>;
-  currentModel: Model; // Wouldn't be needed if projectService was shared globally...
+  projectService: ProjectService;
 }
 
 export default function ResultsModal({
   show,
   setShow,
-  currentModel,
+  projectService,
 }: Readonly<ResultsModalProps>): JSX.Element {
   return (
     <Modal show={show} onHide={() => setShow(false)}>
       <Modal.Header closeButton>Results</Modal.Header>
       <Modal.Body>
         <Accordion alwaysOpen>
-          {reasoningService.results.map((result, index) => {
+          {reasoningService.results.map((result) => {
             return (
-              <Accordion.Item eventKey={index.toString()}>
-                <Accordion.Header>Result #{index + 1}</Accordion.Header>
+              <Accordion.Item
+                key={result.timestamp.getTime()}
+                eventKey={result.timestamp.getTime().toString()}
+              >
+                <Accordion.Header>
+                  {result.modelName} [{result.timestamp.toLocaleString()}]
+                </Accordion.Header>
                 <Accordion.Body>
                   {result.satisfiable && (
-                    <div>
+                    <>
                       {result.satisfiable
                         ? "Model is satisfiable"
                         : "Model isn't satisfiable"}
-                    </div>
+                    </>
                   )}
                   {result.solutions && (
-                    <div>
-                      Found {result.solutions.length} solutions:
-                      <ListGroup>
-                        {result.solutions.map((solution, index) => (
-                          <ListGroup.Item
-                            variant="primary"
-                            action
-                            onClick={() => {
+                    <ListGroup>
+                      {result.solutions.map((solution, index) => (
+                        <ListGroup.Item
+                          key={result.timestamp.getTime() + "_" + index}
+                          variant="primary"
+                          action
+                          onClick={() => {
+                            if (
+                              projectService.currentModel.name ===
+                              result.modelName
+                            ) {
                               reasoningService.applySolution(
                                 solution,
-                                currentModel,
+                                projectService.currentModel,
                               );
-                              console.log(solution);
                               setShow(false);
-                            }}
-                          >
-                            Solution #{index + 1}
-                          </ListGroup.Item>
-                        ))}
-                      </ListGroup>
-                    </div>
+                            } else
+                              console.error(
+                                "Solution can't be apply to this model",
+                              );
+                          }}
+                        >
+                          Solution #{index + 1}
+                        </ListGroup.Item>
+                      ))}
+                    </ListGroup>
                   )}
-                  {result.iterations && <div>TODO Iterations</div>}
+                  {result.iterations && <>TODO Iterations</>}
                 </Accordion.Body>
               </Accordion.Item>
             );
