@@ -48,13 +48,14 @@ export default function ElementNode({
 
   useEffect(() => {
     updateNodeInternals(id);
+    console.log(style);
   }, [id, isPossibleTarget, isPossibleSource, updateNodeInternals]);
 
   return (
     <div
       className="element-node"
       style={{
-        ...style,
+        ...(style["body"]),
         width: width ?? style.width,
         height: height ?? style.height,
       }}
@@ -81,12 +82,12 @@ export default function ElementNode({
 
       <NodeResizer isVisible={selected} minWidth={20} minHeight={20} />
 
-      <div className="element-node-title">{element.name}</div>
+      <div className="element-node-title" style={{ ...style["title"] }}>{element.name}</div>
 
       {element.properties
         .filter((p) => p.display === true)
         .map((p) => (
-          <div className="element-node-property" key={p.name}>
+          <div className="element-node-property" key={p.name} style={{ ...style["properties"]}}>
             {p.name} = {p.value === undefined ? "?" : p.value.toString()}
           </div>
         ))}
@@ -108,10 +109,7 @@ export function convertElementToNode(elementTypes: any[], element: Element) {
       style: {
         width: element.width,
         height: element.height,
-        backgroundColor: elementType.style.fill.value,
-        color: elementType.style.font.color,
-        fontSize: `${elementType.style.font.size}px`,
-        border: `${elementType.style.stroke.type} ${elementType.style.stroke.width}px ${elementType.style.stroke.value}`,
+        ...elementType.style,
       },
     },
     type: "element",
