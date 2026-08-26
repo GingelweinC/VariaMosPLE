@@ -52,7 +52,7 @@ export default function ReificationNode({
     <div
       className="reification-node"
       style={{
-        ...style,
+        ...style["body"],
         width: width ?? reification.width,
         height: height ?? reification.height,
       }}
@@ -78,11 +78,11 @@ export default function ReificationNode({
 
       <NodeResizer isVisible={selected} minWidth={20} minHeight={20} />
 
-      <div className="reification-node-title">{reification.name}</div>
+      <div className="reification-node-title" style={{ ...style["title"] }}>{reification.name}</div>
       {reification.properties
         .filter((p) => p.display === true)
         .map((p) => (
-          <div className="reification-node-property" key={p.name}>
+          <div className="reification-node-property" key={p.name} style={{ ...style["properties"] }}>
             {p.name} = {p.value === undefined ? "?" : p.value.toString()}
           </div>
         ))}
@@ -109,10 +109,9 @@ export function convertReificationToNode(
       reification,
       reificationType,
       style: {
-        backgroundColor: reificationType.style.fill.value,
-        color: reificationType.style.font.color,
-        fontSize: `${reificationType.style.font.size}px`,
-        border: `${reificationType.style.stroke.type} ${reificationType.style.stroke.width}px ${reificationType.style.stroke.value}`,
+        width: reification.width,
+        height: reification.height,
+        ...reificationType.style,
       },
     },
     type: "reification",
