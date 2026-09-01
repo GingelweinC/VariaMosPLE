@@ -61,9 +61,19 @@ export function convertReificationEndpointToEdges(
   const reificationType = reificationTypes.find(
     (type) => type.uuid === reificationTypeId,
   );
-  const endpointTypes = reificationType.endpoints;
+  const endpointTypes = reificationType?.endpoints;
 
-  const endpointType = endpointTypes.find((type) => type.uuid === endpoint.id);
+  const endpointType = endpointTypes?.find((type) => type.uuid === endpoint.id);
+
+   const strokeWidth = endpointType?.style.style?.strokewidth || 1;
+    const getMarker = (marker: any) => {
+    if (!marker || !marker.type) return undefined;
+      return {
+        type: marker.type || 'none',
+        color: marker.color,
+        strokeWidth: marker.strokeWidth,
+      };
+    };
 
   return endpoint.elements.map((elementId) => ({
     id: crypto.randomUUID(),
@@ -72,37 +82,11 @@ export function convertReificationEndpointToEdges(
     target: elementId,
     data: { endpoint: endpoint },
     type: "reificationEndpoint",
-    style: {
-      stroke: endpointType.style.stroke.color,
-      strokeWidth: endpointType.style.stroke.width,
+   style: {
+      ...endpointType?.style.style
     },
-    markerStart:
-      endpointType.style.sourceArrow?.type === "arrow"
-        ? {
-            type: MarkerType.Arrow,
-            height:
-              endpointType.style.sourceArrow.height ??
-              endpointType.style.stroke.width * 5,
-            width:
-              endpointType.style.sourceArrow.width ??
-              endpointType.style.stroke.width * 5,
-            color: endpointType.style.stroke.color,
-            strokeWidth: endpointType.style.stroke.width,
-          }
-        : undefined,
-    markerEnd:
-      endpointType.style.targetArrow?.type === "arrow"
-        ? {
-            type: MarkerType.Arrow,
-            height:
-              endpointType.style.targetArrow.height ??
-              endpointType.style.stroke.width * 5,
-            width:
-              endpointType.style.targetArrow.width ??
-              endpointType.style.stroke.width * 5,
-            color: endpointType.style.stroke.color,
-            strokeWidth: endpointType.style.stroke.width,
-          }
-        : undefined,
+    markerStart: getMarker(endpointType?.style.markerStart),
+    markerEnd: getMarker(endpointType?.style.markerEnd),
+            
   }));
 }

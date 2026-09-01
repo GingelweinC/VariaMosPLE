@@ -56,6 +56,29 @@ export function convertRelationToEdge(
   const relationType = relationTypes.find(
     (relationType) => relationType.uuid === relation.type,
   );
+  if (!relationType) {
+    return {
+      id: relation.id,
+      source: relation.sourceId,
+      target: relation.targetId,
+      data: { relation: relation },
+      type: "relation",
+      style: { stroke: "#000", strokeWidth: 1 },
+    };
+  }
+
+  const strokeWidth = relationType.style.style?.strokewidth || 1;
+
+  const getMarker = (marker: any) => {
+    if (!marker || !marker.type) return undefined;
+      return {
+        type: marker.type || 'none',
+        color: marker.color,
+        strokeWidth: marker.strokeWidth,
+      };
+    };
+
+
   return {
     id: relation.id,
     source: relation.sourceId,
@@ -65,36 +88,9 @@ export function convertRelationToEdge(
     },
     type: "relation",
     style: {
-      stroke: relationType.style.stroke.color,
-      strokeWidth: relationType.style.stroke.width,
+      ...relationType.style.style
     },
-    markerStart:
-      relationType.style.sourceArrow.type === "arrow"
-        ? {
-            type: MarkerType.Arrow,
-            height:
-              relationType.style.sourceArrow.height ??
-              relationType.style.stroke.width * 5,
-            width:
-              relationType.style.sourceArrow.width ??
-              relationType.style.stroke.width * 5,
-            color: relationType.style.stroke.color,
-            strokeWidth: relationType.style.stroke.width,
-          }
-        : undefined,
-    markerEnd:
-      relationType.style.targetArrow.type === "arrow"
-        ? {
-            type: MarkerType.Arrow,
-            height:
-              relationType.style.sourceArrow.height ??
-              relationType.style.stroke.width * 5,
-            width:
-              relationType.style.sourceArrow.width ??
-              relationType.style.stroke.width * 5,
-            color: relationType.style.stroke.color,
-            strokeWidth: relationType.style.stroke.width,
-          }
-        : undefined,
+    markerStart: getMarker(relationType.style.markerStart),
+    markerEnd: getMarker(relationType.style.markerEnd),
   };
 }

@@ -98,7 +98,7 @@ export function convertElementToNode(elementTypes: any[], element: Element) {
   const elementType = elementTypes.find(
     (elementType) => elementType.uuid === element.type,
   );
-
+  console.log(elementTypes);
   return {
     id: element.id,
     position: { x: element.x, y: element.y },
@@ -109,7 +109,7 @@ export function convertElementToNode(elementTypes: any[], element: Element) {
       style: {
         width: element.width,
         height: element.height,
-        ...elementType.style,
+        ...elementType?.style,
       },
     },
     type: "element",

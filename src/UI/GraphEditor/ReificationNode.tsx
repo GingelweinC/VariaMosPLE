@@ -58,11 +58,11 @@ export default function ReificationNode({
       }}
     >
       {reification.endpoints.map((endpoint, index) => {
-        const endpointType = reificationType.endpoints.find(
+        const endpointType = reificationType?.endpoints.find(
           (endpointType) => endpointType.uuid === endpoint.id,
         );
         return (
-          <OverlayTrigger overlay={<Tooltip>{endpointType.name}</Tooltip>}>
+          <OverlayTrigger overlay={<Tooltip>{endpointType?.name}</Tooltip>}>
             <Handle
               key={endpoint.id}
               id={endpoint.id}
@@ -111,7 +111,7 @@ export function convertReificationToNode(
       style: {
         width: reification.width,
         height: reification.height,
-        ...reificationType.style,
+        ...reificationType?.style,
       },
     },
     type: "reification",
